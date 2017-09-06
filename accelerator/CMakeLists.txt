@@ -6,6 +6,7 @@ find_library(CPPREST_LIB NAMES cpprest_2_9d cpprest_2_9 cpprestd cpprest)
 if (OPENSSL_FOUND AND CPPREST_LIB)
 
    include_directories(${CPPREST_INCLUDE})
+   include_directories(${OPENSSL_INCLUDE_DIR})
 
    set (PACKAGE_NAME "D-Wave XACC Accelerator")
    set (PACKAGE_DESCIPTION "D-Wave XACC Accelerator Bundle")
