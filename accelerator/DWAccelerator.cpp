@@ -49,7 +49,7 @@ namespace quantum {
 std::shared_ptr<AcceleratorBuffer> DWAccelerator::createBuffer(
 			const std::string& varId) {
 	auto options = RuntimeOptions::instance();
-	std::string solverName = "DW_2000Q_VFYC";
+	std::string solverName = "DW_2000Q_VFYC_1";
 	if (options->exists("dwave-solver")) {
 		solverName = (*options)["dwave-solver"];
 	}
@@ -113,7 +113,7 @@ void DWAccelerator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
 	auto nQMILines = splitLines.size();
 	auto options = RuntimeOptions::instance();
 	std::string jsonStr = "",
-			solverName = "DW_2000Q_VFYC", solveType = "ising", trials = "100",
+			solverName = "DW_2000Q_VFYC_1", solveType = "ising", trials = "100",
 			annealTime = "20";
 
 	if (options->exists("dwave-solver")) {
@@ -391,7 +391,7 @@ void DWAccelerator::findApiKeyInFile(std::string& apiKey, std::string& url,
  */
 std::shared_ptr<AcceleratorGraph> DWAccelerator::getAcceleratorConnectivity() {
 	auto options = RuntimeOptions::instance();
-	std::string solverName = "DW_2000Q_VFYC";
+	std::string solverName = "DW_2000Q_VFYC_1";
 
 	if (options->exists("dwave-solver")) {
 		solverName = (*options)["dwave-solver"];
