@@ -54,7 +54,7 @@ std::shared_ptr<AcceleratorBuffer> DWAccelerator::createBuffer(
 		solverName = (*options)["dwave-solver"];
 	}
 	if (!availableSolvers.count(solverName)) {
-		XACCError(solverName + " is not available for creating a buffer.");
+		xacc::error(solverName + " is not available for creating a buffer.");
 	}
 	auto solver = availableSolvers[solverName];
 	auto buffer = std::make_shared<AQCAcceleratorBuffer>(varId, solver.nQubits);
@@ -65,7 +65,7 @@ std::shared_ptr<AcceleratorBuffer> DWAccelerator::createBuffer(
 std::shared_ptr<AcceleratorBuffer> DWAccelerator::createBuffer(
 		const std::string& varId, const int size) {
 	if (!isValidBufferSize(size)) {
-		XACCError("Invalid buffer size.");
+		xacc::error("Invalid buffer size.");
 	}
 
 	auto buffer = std::make_shared<AQCAcceleratorBuffer>(varId, size);
@@ -98,12 +98,12 @@ void DWAccelerator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
 
 	auto dwKernel = std::dynamic_pointer_cast<DWKernel>(kernel);
 	if (!dwKernel) {
-		XACCError("Invalid kernel.");
+		xacc::error("Invalid kernel.");
 	}
 
 	auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
 	if (!aqcBuffer) {
-		XACCError("Invalid Accelerator Buffer.");
+		xacc::error("Invalid Accelerator Buffer.");
 	}
 
 	Document doc;
@@ -121,7 +121,7 @@ void DWAccelerator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
 	}
 
 	if (!availableSolvers.count(solverName)) {
-		XACCError(solverName + " is not available.");
+		xacc::error(solverName + " is not available.");
 	}
 
 	auto solver = availableSolvers[solverName];
@@ -258,7 +258,7 @@ void DWAccelerator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
 		std::cout << "Max Prob Meas: " << aqcBuffer->getMostProbableEnergy() << ", " << aqcBuffer->getMostProbableMeasurement() << "\n";
 
 	} else {
-		XACCError("Error in executing D-Wave QPU.");
+		xacc::error("Error in executing D-Wave QPU.");
 	}
 
 	return;
@@ -339,7 +339,7 @@ void DWAccelerator::searchAPIKey(std::string& key, std::string& url) {
 
 		// Ensure that the user has provided an api-key
 		if (!options->exists("dwave-api-key")) {
-			XACCError("Cannot execute kernel on DW chip without API Key.");
+			xacc::error("Cannot execute kernel on DW chip without API Key.");
 		}
 
 		// Set the API Key
@@ -352,7 +352,7 @@ void DWAccelerator::searchAPIKey(std::string& key, std::string& url) {
 
 	// If its still empty, then we have a problem
 	if (key.empty()) {
-		XACCError("Error. The API Key is empty. Please place it "
+		xacc::error("Error. The API Key is empty. Please place it "
 				"in your $HOME/.dwave_config file, $DWAVE_CONFIG env var, "
 				"or provide --dwave-api-key argument.");
 	}
@@ -398,7 +398,7 @@ std::shared_ptr<AcceleratorGraph> DWAccelerator::getAcceleratorConnectivity() {
 	}
 
 	if (!availableSolvers.count(solverName)) {
-		XACCError(solverName + " is not available.");
+		xacc::error(solverName + " is not available.");
 	}
 
 	auto solver = availableSolvers[solverName];

@@ -32,7 +32,7 @@
 #define QUANTUM_AQC_COMPILERS_DWQMICOMPILER_HPP_
 
 #include "Compiler.hpp"
-#include "Utils.hpp"
+#include "XACC.hpp"
 #include "DWIR.hpp"
 #include "DWGraph.hpp"
 #include "EmbeddingAlgorithm.hpp"
@@ -112,7 +112,7 @@ public:
 		if (map.count("dwave-list-embedding-algorithms")) {
 			auto ids = ServiceRegistry::instance()->getRegisteredIds<EmbeddingAlgorithm>();
 			for (auto i : ids) {
-				XACCInfo("Registered Embedding Algorithm: " + i);
+				xacc::info("Registered Embedding Algorithm: " + i);
 			}
 			return true;
 		}
@@ -127,7 +127,7 @@ public:
 	 */
 	virtual const std::string translate(const std::string& bufferVariable,
 			std::shared_ptr<Function> function) {
-		XACCError("DWQMICompiler::translate - Method not implemented");
+		xacc::error("DWQMICompiler::translate - Method not implemented");
 	};
 
 	virtual const std::string name() const {

@@ -58,7 +58,7 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 	auto buffer = acc->getBuffer(bufName);
 	auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
 	if (!aqcBuffer) {
-		XACCError("Invalid AcceleratorBuffer passed to DW QMI Compiler. Must be an AQCAcceleratorBuffer.");
+		xacc::error("Invalid AcceleratorBuffer passed to DW QMI Compiler. Must be an AQCAcceleratorBuffer.");
 	}
 
 	// Here we expect we have a kernel, only one kernel,
@@ -120,7 +120,7 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 	if (!runtimeOptions->exists("dwave-embedding")
 			&& !runtimeOptions->exists("dwave-load-embedding")) {
 		// For now, this is an error
-		XACCError("You must specify an embedding algorithm or embedding file.");
+		xacc::error("You must specify an embedding algorithm or embedding file.");
 	}
 
 	if (runtimeOptions->exists("dwave-load-embedding")) {
@@ -170,7 +170,7 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 }
 
 std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src) {
-	XACCError("Cannot compile D-Wave program without "
+	xacc::error("Cannot compile D-Wave program without "
 			"information about Accelerator connectivity.");
 }
 

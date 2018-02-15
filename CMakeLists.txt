@@ -21,8 +21,6 @@ find_package(Boost COMPONENTS system program_options filesystem chrono thread RE
 
 include_directories(${XACC_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${XACC_ROOT}/include/rapidjson/include)
-include_directories(${XACC_ROOT}/include/eigen)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/accelerator)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/compiler)

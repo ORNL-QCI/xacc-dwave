@@ -1,13 +1,4 @@
 
-find_package(OpenSSL)
-find_path(CPPREST_INCLUDE cpprest/http_client.h)
-find_library(CPPREST_LIB NAMES cpprest_2_9d cpprest_2_9 cpprestd cpprest)
-   
-if (OPENSSL_FOUND AND CPPREST_LIB)
-
-   include_directories(${CPPREST_INCLUDE})
-   include_directories(${OPENSSL_INCLUDE_DIR})
-
    set (PACKAGE_NAME "D-Wave XACC Accelerator")
    set (PACKAGE_DESCIPTION "D-Wave XACC Accelerator Bundle")
    set (LIBRARY_NAME xacc-dwave-accelerator)
@@ -46,14 +37,11 @@ if (OPENSSL_FOUND AND CPPREST_LIB)
        manifest.json
     )
 
-   target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${CPPREST_LIB} CppMicroServices xacc xacc-quantum-aqc)
+   target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${XACC_LIBRARIES}) 
 
    install(TARGETS ${LIBRARY_NAME} DESTINATION ${XACC_ROOT}/lib/plugins/accelerators)
    
    # Gather tests
    file (GLOB test_files ../tests/DWAcceleratorTester.cpp)
-   add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "xacc-dwave-accelerator;${Boost_LIBRARIES};${XACC_LIBRARIES};dl;pthread")
+   add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};${XACC_LIBRARIES};xacc-dwave-accelerator;dl;pthread")
    
-else()
-   message(STATUS "OpenSSL or cpprestsdk not found, cannot include D-Wave Accelerator plugin")
-endif()

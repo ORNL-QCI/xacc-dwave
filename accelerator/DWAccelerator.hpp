@@ -175,7 +175,7 @@ public:
 			initialize();
 
 			for (auto s : availableSolvers) {
-				XACCInfo("Available D-Wave Solver: " + std::string(s.first));
+				xacc::info("Available D-Wave Solver: " + std::string(s.first));
 			}
 			return true;
 		}
