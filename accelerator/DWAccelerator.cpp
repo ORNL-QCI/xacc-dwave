@@ -77,44 +77,67 @@ bool DWAccelerator::isValidBufferSize(const int NBits) {
 	return NBits > 0;
 }
 
-std::vector<std::shared_ptr<AcceleratorBuffer>> DWAccelerator::execute(
-		std::shared_ptr<AcceleratorBuffer> buffer,
-		const std::vector<std::shared_ptr<Function>> functions) {
-	int counter = 0;
-	std::vector<std::shared_ptr<AcceleratorBuffer>> tmpBuffers;
-	for (auto f : functions) {
-		auto tmpBuffer = createBuffer(
-				buffer->name() + std::to_string(counter), buffer->size());
-		execute(tmpBuffer, f);
-		tmpBuffers.push_back(tmpBuffer);
-		counter++;
+
+void DWAccelerator::initialize() {
+	searchAPIKey(apiKey, url);
+
+	// Set up the extra HTTP headers we are going to need
+	headers.insert({"X-Auth-Token", apiKey});
+	headers.insert({"Content-type", "application/x-www-form-urlencoded"});
+	headers.insert({"Accept", "*/*"});
+
+	auto message = handleExceptionRestClientGet(url, "/sapi/solvers/remote");
+
+	Document document;
+	document.Parse(message);
+
+	if (document.IsArray()) {
+		for (auto i = 0; i < document.Size(); i++) {
+			DWSolver solver;
+			solver.name = document[i]["id"].GetString();
+			boost::trim(solver.name);
+			solver.description = document[i]["description"].GetString();
+			if (document[i]["properties"].FindMember("j_range") != document[i]["properties"].MemberEnd()) {
+				solver.jRangeMin = document[i]["properties"]["j_range"][0].GetDouble();
+				solver.jRangeMax = document[i]["properties"]["j_range"][1].GetDouble();
+				solver.hRangeMin = document[i]["properties"]["h_range"][0].GetDouble();
+				solver.hRangeMax = document[i]["properties"]["h_range"][1].GetDouble();
+
+			}
+			solver.nQubits = document[i]["properties"]["num_qubits"].GetInt();
+
+			// Get the connectivity
+			auto couplers = document[i]["properties"]["couplers"].GetArray();
+			for (int j = 0; j < couplers.Size(); j++) {
+				solver.edges.push_back(std::make_pair(couplers[j][0].GetInt(), couplers[j][1].GetInt()));
+			}
+			availableSolvers.insert(std::make_pair(solver.name, solver));
+		}
 	}
 
-	return tmpBuffers;
+	remoteUrl = url;
+	postPath = "/sapi/problems";
 }
 
-void DWAccelerator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
-		const std::shared_ptr<xacc::Function> kernel) {
 
-	auto dwKernel = std::dynamic_pointer_cast<DWKernel>(kernel);
+const std::string DWAccelerator::processInput(
+                std::shared_ptr<AcceleratorBuffer> buffer,
+                std::vector<std::shared_ptr<Function>> functions) {
+
+	if (functions.size() > 1)
+		xacc::error("RigettiAccelerator can only launch one job at a time.");
+
+	auto dwKernel = std::dynamic_pointer_cast<DWKernel>(functions[0]);
 	if (!dwKernel) {
 		xacc::error("Invalid kernel.");
 	}
 
-	auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
-	if (!aqcBuffer) {
-		xacc::error("Invalid Accelerator Buffer.");
-	}
-
-	Document doc;
-	bool jobCompleted = false;
 	std::vector<std::string> splitLines;
 	boost::split(splitLines, dwKernel->toString(""), boost::is_any_of("\n"));
 	auto nQMILines = splitLines.size();
 	auto options = RuntimeOptions::instance();
-	std::string jsonStr = "",
-			solverName = "DW_2000Q_VFYC_1", solveType = "ising", trials = "100",
-			annealTime = "20";
+	std::string jsonStr = "", solverName = "DW_2000Q_VFYC_1", solveType =
+			"ising", trials = "100", annealTime = "20";
 
 	if (options->exists("dwave-solver")) {
 		solverName = (*options)["dwave-solver"];
@@ -128,8 +151,10 @@ void DWAccelerator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
 
 	// Normalize the QMI data
 	auto allWeightValues = dwKernel->getAllCouplers();
-	auto minWeight = *std::min_element(allWeightValues.begin(),allWeightValues.end());
-	auto maxWeight = *std::max_element(allWeightValues.begin(),allWeightValues.end());
+	auto minWeight = *std::min_element(allWeightValues.begin(),
+			allWeightValues.end());
+	auto maxWeight = *std::max_element(allWeightValues.begin(),
+			allWeightValues.end());
 
 	// Check if we should normalize Bias values
 	if (minWeight < solver.jRangeMin || maxWeight > solver.jRangeMax) {
@@ -144,63 +169,45 @@ void DWAccelerator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
 		}
 	}
 
-	if(options->exists("dwave-num-reads")) {
+	if (options->exists("dwave-num-reads")) {
 		trials = (*options)["dwave-num-reads"];
 	}
 
-	if(options->exists("dwave-anneal-time")) {
+	if (options->exists("dwave-anneal-time")) {
 		annealTime = (*options)["dwave-anneal-time"];
 	}
 
 	jsonStr += "[{ \"solver\" : \"" + solverName + "\", \"type\" : \""
 			+ solveType + "\", \"data\" : \"" + std::to_string(solver.nQubits)
-			+ " " + std::to_string(nQMILines-1) + "\\n"
+			+ " " + std::to_string(nQMILines - 1) + "\\n"
 			+ dwKernel->toString("") + "\", \"params\": { \"num_reads\" : "
 			+ trials + ", \"annealing_time\" : " + annealTime + "} }]";
 	boost::replace_all(jsonStr, "\n", "\\n");
 
-	// Create the URI, HTTP Client and Post and Get request
-	// add our headers to it - this contains the API key
-	http::uri uri = http::uri(url);
-	http_client postClient(
-			http::uri_builder(uri).append_path(U("/sapi/problems")).to_uri());
-	http_request postRequest(methods::POST), getRequest(methods::GET);
-	for (auto& kv : headers) {
-		postRequest.headers().add(kv.first, kv.second);
-		getRequest.headers().add(kv.first, kv.second);
-	}
-	postRequest.set_body(jsonStr);
+	return jsonStr;
+}
 
-	// Post the problem, get the response as json
-	auto postResponse = postClient.request(postRequest);
-	auto respJson = postResponse.get().extract_json().get();
+std::vector<std::shared_ptr<AcceleratorBuffer>> DWAccelerator::processResponse(
+                std::shared_ptr<AcceleratorBuffer> buffer,
+                const std::string& response) {
 
-	// Map that response to a string
-	std::stringstream x;
-	x << respJson;
+	auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
 
+	bool jobCompleted = false;
+	Document doc;
 	// Parse the json string
-	doc.Parse(x.str());
+	doc.Parse(response);
 
 	// Get the JobID
 	std::string jobId = std::string(doc[0]["id"].GetString());
 
-	// Create a client to execute HTTP Get requests
-	http_client getClient(
-			http::uri_builder(uri).append_path(U("/sapi/problems/" + jobId)).to_uri());
-
 	// Loop until the job is complete,
 	// get the JSON response
-	std::string msg;
+	std::string msg = handleExceptionRestClientGet(url, "/sapi/problems/"+jobId);
 	while (!jobCompleted) {
 
 		// Execute HTTP Get
-		auto getResponse = getClient.request(getRequest);
-
-		// get the result as a string
-		std::stringstream z;
-		z << getResponse.get().extract_json().get();
-		msg = z.str();
+		msg = handleExceptionRestClientGet(url, "/sapi/problems/"+jobId);
 
 		// Search the result for the status : COMPLETED indicator
 		if (boost::contains(msg, "COMPLETED")) {
@@ -261,64 +268,7 @@ void DWAccelerator::execute(std::shared_ptr<AcceleratorBuffer> buffer,
 		xacc::error("Error in executing D-Wave QPU.");
 	}
 
-	return;
-}
-
-void DWAccelerator::initialize() {
-	auto options = RuntimeOptions::instance();
-	searchAPIKey(apiKey, url);
-
-	// Set up the extra HTTP headers we are going to need
-	headers.insert(std::make_pair("X-Auth-Token", apiKey));
-	headers.insert(std::make_pair("Content-type", "application/x-www-form-urlencoded"));
-	headers.insert(std::make_pair("Accept", "*/*"));
-
-
-	http::uri uri = http::uri(url);
-	http_request getRequest(methods::GET);
-	for (auto& kv : headers) {
-		getRequest.headers().add(kv.first, kv.second);
-	}
-
-	// Create a client to execute HTTP Get requests
-	http_client getClient(
-			http::uri_builder(uri).append_path(U("/sapi/solvers/remote")).to_uri());
-
-	// Execute HTTP Get
-	auto getResponse = getClient.request(getRequest);
-
-	// get the result as a string
-	std::stringstream ss;
-	ss << getResponse.get().extract_json().get();
-
-	auto message = ss.str();
-
-	Document document;
-	document.Parse(message.c_str());
-
-	if (document.IsArray()) {
-		for (auto i = 0; i < document.Size(); i++) {
-			DWSolver solver;
-			solver.name = document[i]["id"].GetString();
-			boost::trim(solver.name);
-			solver.description = document[i]["description"].GetString();
-			if (document[i]["properties"].FindMember("j_range") != document[i]["properties"].MemberEnd()) {
-				solver.jRangeMin = document[i]["properties"]["j_range"][0].GetDouble();
-				solver.jRangeMax = document[i]["properties"]["j_range"][1].GetDouble();
-				solver.hRangeMin = document[i]["properties"]["h_range"][0].GetDouble();
-				solver.hRangeMax = document[i]["properties"]["h_range"][1].GetDouble();
-
-			}
-			solver.nQubits = document[i]["properties"]["num_qubits"].GetInt();
-
-			// Get the connectivity
-			auto couplers = document[i]["properties"]["couplers"].GetArray();
-			for (int j = 0; j < couplers.Size(); j++) {
-				solver.edges.push_back(std::make_pair(couplers[j][0].GetInt(), couplers[j][1].GetInt()));
-			}
-			availableSolvers.insert(std::make_pair(solver.name, solver));
-		}
-	}
+	return std::vector<std::shared_ptr<AcceleratorBuffer>> {buffer};
 }
 
 void DWAccelerator::searchAPIKey(std::string& key, std::string& url) {

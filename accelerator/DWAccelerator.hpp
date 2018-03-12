@@ -31,14 +31,12 @@
 #ifndef QUANTUM_GATE_ACCELERATORS_DWACCELERATOR_HPP_
 #define QUANTUM_GATE_ACCELERATORS_DWACCELERATOR_HPP_
 
-#include "Accelerator.hpp"
-#include "RuntimeOptions.hpp"
+#include "RemoteAccelerator.hpp"
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include "DWKernel.hpp"
 #include "DWQMI.hpp"
 #include "AQCAcceleratorBuffer.hpp"
-
 
 #define RAPIDJSON_HAS_STDSTRING 1
 
@@ -71,13 +69,14 @@ struct DWSolver {
  * takes D-Wave IR and executes the quantum machine
  * instructions via remote HTTP invocations.
  */
-class DWAccelerator : public Accelerator {
+class DWAccelerator : public RemoteAccelerator {
 public:
 
 	/**
 	 * The constructor
 	 */
-	DWAccelerator() {}
+	DWAccelerator() : RemoteAccelerator() {}
+	DWAccelerator(std::shared_ptr<RestClient> client) : RemoteAccelerator(client) {}
 
 	/**
 	 * Create, store, and return an AcceleratorBuffer with the given
@@ -107,28 +106,33 @@ public:
 	 */
 	virtual std::shared_ptr<AcceleratorGraph> getAcceleratorConnectivity();
 
-	/**
-	 * Execute the kernel on the provided AcceleratorBuffer through a
-	 * HTTP Post of Quil instructions to the Rigetti QPU at api.rigetti.com/qvm
-	 *
-	 * @param ir
-	 */
-	virtual void execute(std::shared_ptr<AcceleratorBuffer> buffer,
-			const std::shared_ptr<xacc::Function> kernel);
+	virtual const std::string processInput(
+			std::shared_ptr<AcceleratorBuffer> buffer,
+			std::vector<std::shared_ptr<Function>> functions);
 
 	/**
-	 * Execute a set of kernels with one remote call. Return
-	 * a list of AcceleratorBuffers that provide a new view
-	 * of the given one AcceleratorBuffer. The ith AcceleratorBuffer
-	 * contains the results of the ith kernel execution.
-	 *
-	 * @param buffer The AcceleratorBuffer to execute on
-	 * @param functions The list of IR Functions to execute
-	 * @return tempBuffers The list of new AcceleratorBuffers
+	 * take response and create
 	 */
+	virtual std::vector<std::shared_ptr<AcceleratorBuffer>> processResponse(
+			std::shared_ptr<AcceleratorBuffer> buffer,
+			const std::string& response);
+
 	virtual std::vector<std::shared_ptr<AcceleratorBuffer>> execute(
 			std::shared_ptr<AcceleratorBuffer> buffer,
-			const std::vector<std::shared_ptr<Function>> functions);
+			const std::vector<std::shared_ptr<Function>> functions) {
+		int counter = 0;
+		std::vector<std::shared_ptr<AcceleratorBuffer>> tmpBuffers;
+		for (auto f : functions) {
+			auto tmpBuffer = createBuffer(
+					buffer->name() + std::to_string(counter), buffer->size());
+			RemoteAccelerator::execute(tmpBuffer, f);
+			tmpBuffers.push_back(tmpBuffer);
+			counter++;
+		}
+
+		return tmpBuffers;
+	}
+
 
 	/**
 	 * This Accelerator models QPU Gate accelerators.
@@ -225,17 +229,41 @@ protected:
 	std::string url;
 
 	/**
-	 * Reference to the HTTP Post/Get headers
-	 */
-	std::map<std::string, std::string> headers;
-
-	/**
 	 * Reference to the mapping of solver names
 	 * to Solver Type.
 	 */
 	std::map<std::string, DWSolver> availableSolvers;
 
 private:
+
+	std::string handleExceptionRestClientGet(const std::string& _url, const std::string& path) {
+		std::string getResponse;
+		int retries = 10;
+		std::exception ex;
+		bool succeeded = false;
+		// Execute HTTP Get
+		do {
+			try {
+				getResponse = restClient->get(_url, path, headers);
+				succeeded = true;
+				break;
+			} catch (std::exception& e) {
+				ex = e;
+				xacc::info("DWave Accelerator caught exception while calling restClient->get() "
+						"- " + std::string(e.what()));
+				retries--;
+				if (retries > 0) {
+					xacc::info("Retrying HTTP Get.");
+				}
+			}
+		} while (retries > 0);
+
+		if (!succeeded) {
+			xacc::error("DWave Accelerator failed HTTP Get for Job Response - " + std::string(ex.what()));
+		}
+
+		return getResponse;
+	}
 
 	/**
 	 * Private utility to search for the D-Wave
