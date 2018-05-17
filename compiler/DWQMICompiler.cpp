@@ -117,24 +117,24 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 
 	Embedding embedding;
 	// Get an embedding algorithm to execute
-	if (!runtimeOptions->exists("dwave-embedding")
-			&& !runtimeOptions->exists("dwave-load-embedding")) {
+	if (!xacc::optionExists("dwave-embedding")
+			&& !xacc::optionExists("dwave-load-embedding")) {
 		// For now, this is an error
 		xacc::error("You must specify an embedding algorithm or embedding file.");
 	}
 
-	if (runtimeOptions->exists("dwave-load-embedding")) {
+	if (xacc::optionExists("dwave-load-embedding")) {
 		std::ifstream ifs((*runtimeOptions)["dwave-load-embedding"]);
 		embedding.load(ifs);
 	} else {
 		auto algoStr = (*runtimeOptions)["dwave-embedding"];
 		auto embeddingAlgorithm =
-				ServiceRegistry::instance()->getService<EmbeddingAlgorithm>(algoStr);
+				xacc::getService<EmbeddingAlgorithm>(algoStr);
 
 		// Compute the minor graph embedding
 		embedding = embeddingAlgorithm->embed(problemGraph, hardwareGraph);
 
-		if (runtimeOptions->exists("dwave-persist-embedding")) {
+		if (xacc::optionExists("dwave-persist-embedding")) {
 			auto fileName = (*runtimeOptions)["dwave-persist-embedding"];
 			std::ofstream ofs(fileName);
 			embedding.persist(ofs);
@@ -146,11 +146,11 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 
 	// Get the ParameterSetter
 	std::shared_ptr<ParameterSetter> parameterSetter;
-	if (runtimeOptions->exists("dwave-parameter-setter")) {
-		parameterSetter = ServiceRegistry::instance()->getService<
+	if (xacc::optionExists("dwave-parameter-setter")) {
+		parameterSetter = xacc::getService<
 				ParameterSetter>((*runtimeOptions)["dwave-parameter-setter"]);
 	} else {
-		parameterSetter = ServiceRegistry::instance()->getService<
+		parameterSetter = xacc::getService<
 				ParameterSetter>("default");
 	}
 

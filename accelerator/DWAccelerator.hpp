@@ -76,7 +76,7 @@ public:
 	 * The constructor
 	 */
 	DWAccelerator() : RemoteAccelerator() {}
-	DWAccelerator(std::shared_ptr<RestClient> client) : RemoteAccelerator(client) {}
+	DWAccelerator(std::shared_ptr<Client> client) : RemoteAccelerator(client) {}
 
 	/**
 	 * Create, store, and return an AcceleratorBuffer with the given
@@ -233,37 +233,6 @@ protected:
 	 * to Solver Type.
 	 */
 	std::map<std::string, DWSolver> availableSolvers;
-
-private:
-
-	std::string handleExceptionRestClientGet(const std::string& _url, const std::string& path) {
-		std::string getResponse;
-		int retries = 10;
-		std::exception ex;
-		bool succeeded = false;
-		// Execute HTTP Get
-		do {
-			try {
-				getResponse = restClient->get(_url, path, headers);
-				succeeded = true;
-				break;
-			} catch (std::exception& e) {
-				ex = e;
-				xacc::info("DWave Accelerator caught exception while calling restClient->get() "
-						"- " + std::string(e.what()));
-				retries--;
-				if (retries > 0) {
-					xacc::info("Retrying HTTP Get.");
-				}
-			}
-		} while (retries > 0);
-
-		if (!succeeded) {
-			xacc::error("DWave Accelerator failed HTTP Get for Job Response - " + std::string(ex.what()));
-		}
-
-		return getResponse;
-	}
 
 	/**
 	 * Private utility to search for the D-Wave

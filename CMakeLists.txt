@@ -1,38 +1,39 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 project(xacc-dwave LANGUAGES CXX)
 
+option(DWAVE_BUILD_TESTS "Build test programs" OFF)
+
 set(CMAKE_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 message(STATUS "C++ version ${CXX_STANDARD} configured.")
 
-# Make sure all build libraries have reference to their dependents
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
 find_package(XACC REQUIRED)
 
-set(CppMicroServicesConfig_DIR "${XACC_ROOT}/share/cppmicroservices3/cmake")
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set (CMAKE_INSTALL_PREFIX "${XACC_ROOT}" CACHE PATH "default install path" FORCE )
+endif()
+
+set(CppMicroServicesConfig_DIR "${XACC_ROOT}/share/cppmicroservices4/cmake")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${XACC_ROOT}/share/xacc")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CppMicroServicesConfig_DIR}")
 include(tests)
 include(CppMicroServicesConfig)
 
-find_package(Boost COMPONENTS system program_options filesystem chrono thread REQUIRED)
-
 include_directories(${XACC_INCLUDE_DIRS})
-include_directories(${Boost_INCLUDE_DIRS})
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/accelerator)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/compiler)
+include_directories(${CMAKE_SOURCE_DIR}/utils)
 
 link_directories(${XACC_LIBRARY_DIR})
 
-add_subdirectory(accelerator)
 add_subdirectory(compiler)
-add_subdirectory(examples)
+add_subdirectory(accelerator)
+if(PYTHON_INCLUDE_DIR)
+   add_subdirectory(python)
+endif()
 
-# Gather tests
-file (GLOB test_files tests/DWQMI*.cpp)
-add_tests("${test_files}" "${CMAKE_CURRENT_SOURCE_DIR}" "${Boost_LIBRARIES};${XACC_LIBRARIES};dl;pthread;xacc-dwave-qmicompiler")
-
-
+if(DWAVE_BUILD_TESTS)
+   add_subdirectory(examples)
+   include_directories(${CMAKE_SOURCE_DIR}/accelerator)
+   include_directories(${CMAKE_SOURCE_DIR}/compiler)
+   add_subdirectory(tests)
+endif()
+   

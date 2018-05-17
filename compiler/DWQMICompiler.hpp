@@ -30,14 +30,10 @@
  **********************************************************************************/
 #ifndef QUANTUM_AQC_COMPILERS_DWQMICOMPILER_HPP_
 #define QUANTUM_AQC_COMPILERS_DWQMICOMPILER_HPP_
-
-#include "Compiler.hpp"
 #include "XACC.hpp"
 #include "DWIR.hpp"
 #include "DWGraph.hpp"
 #include "EmbeddingAlgorithm.hpp"
-
-#include "ServiceRegistry.hpp"
 
 namespace xacc {
 
@@ -110,7 +106,7 @@ public:
 
 	virtual bool handleOptions(variables_map& map) {
 		if (map.count("dwave-list-embedding-algorithms")) {
-			auto ids = ServiceRegistry::instance()->getRegisteredIds<EmbeddingAlgorithm>();
+			auto ids = xacc::getRegisteredIds<EmbeddingAlgorithm>();
 			for (auto i : ids) {
 				xacc::info("Registered Embedding Algorithm: " + i);
 			}

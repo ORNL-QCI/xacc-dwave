@@ -53,7 +53,7 @@ int main (int argc, char** argv) {
 	// Initialize the XACC Framework
 	xacc::Initialize(argc, argv);
 
-	(*xacc::RuntimeOptions::instance())["compiler"] = "dwave-qmi";
+	xacc::setOption("compiler","dwave-qmi");
 
 	auto qpu = xacc::getAccelerator("dwave");
 

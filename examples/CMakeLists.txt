@@ -29,6 +29,4 @@
 #
 #**********************************************************************************/
 add_executable(dwave-simple-example dwave-simple-example.cpp)
-target_link_libraries(dwave-simple-example ${Boost_LIBRARIES} ${XACC_LIBRARIES})
-   
-#install(TARGETS dwave-simple-example DESTINATION examples)
+target_link_libraries(dwave-simple-example ${XACC_LIBRARIES})
