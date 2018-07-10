@@ -76,7 +76,7 @@ void DWAccelerator::initialize() {
 	headers.insert({"Content-type", "application/x-www-form-urlencoded"});
 	headers.insert({"Accept", "*/*"});
 
-	auto message = handleExceptionRestClientGet(url, "/sapi/solvers/remote");
+	auto message = handleExceptionRestClientGet(url, "/sapi/solvers/remote", headers);
 
 	Document document;
 	document.Parse(message);
@@ -193,11 +193,11 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> DWAccelerator::processResponse(
 
 	// Loop until the job is complete,
 	// get the JSON response
-	std::string msg = handleExceptionRestClientGet(url, "/sapi/problems/"+jobId);
+	std::string msg = handleExceptionRestClientGet(url, "/sapi/problems/"+jobId, headers);
 	while (!jobCompleted) {
 
 		// Execute HTTP Get
-		msg = handleExceptionRestClientGet(url, "/sapi/problems/"+jobId);
+		msg = handleExceptionRestClientGet(url, "/sapi/problems/"+jobId, headers);
 
 		// Search the result for the status : COMPLETED indicator
 		if (boost::contains(msg, "COMPLETED")) {

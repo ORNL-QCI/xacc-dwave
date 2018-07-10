@@ -46,7 +46,7 @@ else()
    set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS "-shared")
 endif()
 
-
+message(STATUS "HELLO WORLD ${CMAKE_INSTALL_PREFIX}")
 install(TARGETS ${LIBRARY_NAME} DESTINATION ${CMAKE_INSTALL_PREFIX}/plugins) 
    
 file (GLOB test_files ../tests/DWAcceleratorTester.cpp)

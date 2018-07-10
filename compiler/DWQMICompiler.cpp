@@ -116,18 +116,12 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 	}
 
 	Embedding embedding;
-	// Get an embedding algorithm to execute
-	if (!xacc::optionExists("dwave-embedding")
-			&& !xacc::optionExists("dwave-load-embedding")) {
-		// For now, this is an error
-		xacc::error("You must specify an embedding algorithm or embedding file.");
-	}
-
+	std::string embAlgoStr = "cmr";
 	if (xacc::optionExists("dwave-load-embedding")) {
 		std::ifstream ifs((*runtimeOptions)["dwave-load-embedding"]);
 		embedding.load(ifs);
 	} else {
-		auto algoStr = (*runtimeOptions)["dwave-embedding"];
+		auto algoStr = xacc::optionExists("dwave-embedding") ? xacc::getOption("dwave-embedding") : embAlgoStr; 
 		auto embeddingAlgorithm =
 				xacc::getService<EmbeddingAlgorithm>(algoStr);
 

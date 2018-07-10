@@ -5,20 +5,12 @@ These plugins for XACC provide a Compiler implementation for D-Wave QMI and an A
 
 Installation
 ------------
-With the XACC framework installed, users can choose a couple ways to install these plugins - using Python/Pip
+With the XACC framework installed run the following
 ```bash
-$ python -m pip install --user .
-```
-or CMake and Make without Python support
-```bash
-$ mkdir build && cd build
+$ git clone --recursive https://github.com/ornl-qci/xacc-dwave
+$ cd xacc-dwave && mkdir build && cd build
 $ cmake .. -DXACC_DIR=$HOME/.xacc (or wherever you installed XACC)
 $ make install 
-```
-or with Python support
-```bash
-$ cmake .. -DXACC_DIR=$(python -m pyxacc -L)
-$ make install
 ```
 
 Documentation

@@ -1,0 +1,3 @@
+[submodule "tpls/xacc-cmr"]
+	path = tpls/xacc-cmr
+	url = https://github.com/ornl-qci/xacc-cmr
