@@ -39,41 +39,52 @@
 #include "XACC.hpp"
 
 using namespace dwqmi;
-//using symbol_table_t = exprtk::symbol_table<double>;
-//using expression_t = exprtk::expression<double>;
-//using parser_t = exprtk::parser<double>;
 
 namespace xacc {
 namespace quantum {
 
-constexpr static double pi = boost::math::constants::pi<double>();
-
-DWQMIListener::DWQMIListener() {
-	f = std::make_shared<DWKernel>("main"); 
+DWQMIListener::DWQMIListener(const std::string& fname) {
+	f = std::make_shared<DWKernel>(fname); 
 }
 
 std::shared_ptr<Function> DWQMIListener::getKernel() {
 	return f;
 }
-
         
 void DWQMIListener::enterInst(dwqmi::DWQMIParser::InstContext *ctx) {
 
-	std::shared_ptr<xacc::Instruction> instruction;
+    int bit1, bit2;
+    
+	auto is_double = [](const std::string& s) -> bool
+	{
+	    try {
+		    std::stod(s);
+	    } catch(std::exception& e) {
+		    return false;
+	    }
+	    return true;
+	};
 
-	std::vector<int> qubits;
+    try {
+        bit1 = std::stoi(ctx->INT(0)->getText());
+        bit2 = std::stoi(ctx->INT(1)->getText());
+    } catch(std::exception& e) {
+        xacc::error("Invalid qubit indices: " + ctx->getText());
+    }
 
-	std::vector<InstructionParameter> params;
+    if (bit1 > maxBitIdx) maxBitIdx = bit1;
+    if (bit2 > maxBitIdx) maxBitIdx = bit2;
 
-	std::string gateName;
-
-	xacc::info("HELLO: "+ ctx->INT(0)->getText());
-
-	instruction = std::make_shared<DWQMI>(std::stoi(ctx->INT(0)->getText()), std::stoi(ctx->INT(1)->getText()), std::stod(ctx->real()->getText()));
+    auto val = ctx->real()->getText();
+    auto param = is_double(val) ? InstructionParameter(std::stod(val)) : InstructionParameter(val);
+    
+	auto instruction = std::make_shared<DWQMI>(std::stoi(ctx->INT(0)->getText()), 
+                                                std::stoi(ctx->INT(1)->getText()), 
+                                                param);
         
 	std::cout << "hi: " << instruction->toString("") << "\n";
-    	f->addInstruction(instruction);
-    
+    f->addInstruction(instruction);
+    return;
 }
 
 }

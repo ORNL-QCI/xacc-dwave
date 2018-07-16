@@ -34,7 +34,6 @@
 #include "DWKernel.hpp"
 #include "RuntimeOptions.hpp"
 #include "AQCAcceleratorBuffer.hpp"
-#include "ParameterSetter.hpp"
 
 #include "DWQMIListener.hpp"
 #include "DWQMILexer.h"
@@ -49,7 +48,6 @@ namespace quantum {
 std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 		std::shared_ptr<Accelerator> acc) {
 
-	auto runtimeOptions = RuntimeOptions::instance();
 	auto hardwareGraph = acc->getAcceleratorConnectivity();
 	std::set<int> qubits;
 	std::vector<std::shared_ptr<DWQMI>> instructions;
@@ -62,66 +60,41 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 
 	xacc::info("Source:\n" + kernelSource);
 
-	std::cout << "RUNNIGN ANTLR\n";
-        ANTLRInputStream input(kernelSource);
-        DWQMILexer lexer(&input);
-        CommonTokenStream tokens(&lexer);
-        DWQMIParser parser(&tokens);
-
-        tree::ParseTree *tree = parser.mainprog();
-	std::cout << tree->toStringTree() << "\n";
-        DWQMIListener listener;
-        tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
-
-	std::cout << "DONE RUNING ANTLR\n";
-
-	// Here we assume, there is just one allocation
-	// of qubits for the D-Wave -- all of them.
-	auto bufName = acc->getAllocatedBufferNames()[0];
-	auto buffer = acc->getBuffer(bufName);
-	auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
-	if (!aqcBuffer) {
-		xacc::error("Invalid AcceleratorBuffer passed to DW QMI Compiler. Must be an AQCAcceleratorBuffer.");
-	}
-
-	// Here we expect we have a kernel, only one kernel,
-	// and that it is just machine level instructions
-	// So just pick out where the opening and closing
-	// brackets are, and then get the text between them.
-
-	// First off, split the string into lines
-	std::vector<std::string> lines, fLineSpaces;
+    // Get the function name
+    std::vector<std::string> lines, fLineSpaces;    
 	boost::split(lines, src, boost::is_any_of("\n"));
 	auto functionLine = lines[0];
 	boost::split(fLineSpaces, functionLine, boost::is_any_of(" "));
 	auto fName = fLineSpaces[1];
 	boost::trim(fName);
 	fName = fName.substr(0, fName.find_first_of("("));
-	auto dwKernel = std::make_shared<DWKernel>(fName);
-	auto firstCodeLine = lines.begin() + 1;
-	auto lastCodeLine = lines.end() - 1;
-	std::vector<std::string> qmiStrVec(firstCodeLine, lastCodeLine);
+    
+    ANTLRInputStream input(kernelSource);
+    DWQMILexer lexer(&input);
+    CommonTokenStream tokens(&lexer);
+    DWQMIParser parser(&tokens);
 
-	// Loop over the lines to create DWQMI
-	for (auto qmi : qmiStrVec) {
-		boost::trim(qmi);
-		if (!qmi.empty() && (std::string::npos != qmi.find_first_of("0123456789"))) {
-			std::vector<std::string> splitOnSpaces;
-			boost::split(splitOnSpaces, qmi, boost::is_any_of(" "));
-			auto qbit1 = std::stoi(splitOnSpaces[0]);
-			auto qbit2 = std::stoi(splitOnSpaces[1]);
-			auto weight = std::stod(splitOnSpaces[2]);
-			qubits.insert(qbit1);
-			qubits.insert(qbit2);
-			instructions.emplace_back(std::make_shared<DWQMI>(qbit1, qbit2, weight));
-		}
+    tree::ParseTree *tree = parser.mainprog();
+    DWQMIListener listener(fName);
+    tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
+
+	// Here we assume, there is just one allocation
+	// of qubits for the D-Wave -- all of them.
+	auto bufName = acc->getAllocatedBufferNames()[0];
+	auto buffer = acc->getBuffer(bufName);
+	std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
+	if (!aqcBuffer) {
+		xacc::error("Invalid AcceleratorBuffer passed to DW QMI Compiler. Must be an AQCAcceleratorBuffer.");
 	}
+
+    // Get the constructed DW Kernel
+    auto dwKernel = listener.getKernel();
 
 	// Now we have a qubits set. If we used 0-N qubits,
 	// then this set size will be N, but if we skipped some
 	// bits, then it will be < N. Get the maximum int in this set
 	// so we can see if any were skipped.
-	int maxBitIdx = *qubits.rbegin();
+	int maxBitIdx = listener.maxBitIdx; 
 	maxBitIdx++;
 
 	// Create a graph representation of the problem
@@ -129,22 +102,23 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 	for (auto inst : instructions) {
 		auto qbit1 = inst->bits()[0];
 		auto qbit2 = inst->bits()[1];
-		double weightOrBias = boost::get<double>(inst->getParameter(0));
 		if (qbit1 == qbit2) {
-			problemGraph->setVertexProperties(qbit1, weightOrBias);
+			problemGraph->setVertexProperties(qbit1, 1.0);
 		} else {
 			problemGraph->addEdge(qbit1, qbit2,
-					weightOrBias);
+					1.0);
 		}
 	}
 
+    // Embed the problem
 	Embedding embedding;
 	std::string embAlgoStr = "cmr";
 	if (xacc::optionExists("dwave-load-embedding")) {
-		std::ifstream ifs((*runtimeOptions)["dwave-load-embedding"]);
+		std::ifstream ifs(xacc::getOption("dwave-load-embedding"));
 		embedding.load(ifs);
 	} else {
-		auto algoStr = xacc::optionExists("dwave-embedding") ? xacc::getOption("dwave-embedding") : embAlgoStr; 
+		auto algoStr = xacc::optionExists("dwave-embedding") 
+                        ? xacc::getOption("dwave-embedding") : embAlgoStr; 
 		auto embeddingAlgorithm =
 				xacc::getService<EmbeddingAlgorithm>(algoStr);
 
@@ -152,7 +126,7 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 		embedding = embeddingAlgorithm->embed(problemGraph, hardwareGraph);
 
 		if (xacc::optionExists("dwave-persist-embedding")) {
-			auto fileName = (*runtimeOptions)["dwave-persist-embedding"];
+			auto fileName = xacc::getOption("dwave-persist-embedding");
 			std::ofstream ofs(fileName);
 			embedding.persist(ofs);
 		}
@@ -160,25 +134,6 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 
 	// Add the embedding to the AcceleratorBuffer
 	aqcBuffer->setEmbedding(embedding);
-
-	// Get the ParameterSetter
-	std::shared_ptr<ParameterSetter> parameterSetter;
-	if (xacc::optionExists("dwave-parameter-setter")) {
-		parameterSetter = xacc::getService<
-				ParameterSetter>((*runtimeOptions)["dwave-parameter-setter"]);
-	} else {
-		parameterSetter = xacc::getService<
-				ParameterSetter>("default");
-	}
-
-	// Set the parameters
-	auto insts = parameterSetter->setParameters(problemGraph, hardwareGraph,
-			embedding);
-
-	// Add the instructions to the Kernel
-	for (auto i : insts) {
-		dwKernel->addInstruction(i);
-	}
 
 	// Create and return the IR
 	auto ir = std::make_shared<DWIR>();

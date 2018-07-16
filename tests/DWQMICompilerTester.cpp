@@ -250,23 +250,23 @@ BOOST_AUTO_TEST_CASE(checkFactoring15OneToOneMapping) {
 	auto qmi = ir->getKernel("factor15")->toString("");
 
 
-	const std::string expected =
-		"0 0 20\n"
-		"1 1 50\n"
-		"2 2 60\n"
-		"3 3 0\n"
-		"4 4 50\n"
-		"5 5 60\n"
-		"6 6 -160\n"
-		"0 4 -14\n"
-		"0 5 -12\n"
-		"0 6 32\n"
-		"1 4 -1000\n"
-		"1 5 68\n"
-		"1 6 -128\n"
-		"2 5 -1000\n"
-		"2 6 -128\n";
+	const std::string expected = R"expected(0 0 20
+1 1 50
+2 2 60
+4 4 50
+5 5 60
+6 6 -160
+1 4 -1000
+2 5 -1000
+0 4 -14
+0 5 -12
+0 6 32
+1 5 68
+1 6 -128
+2 6 -128
+)expected";
 
+    std::cout << "QMI:\n" << qmi << "\n";
 	BOOST_VERIFY(expected == qmi);
-        xacc::Finalize();
+    xacc::Finalize();
 }

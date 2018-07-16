@@ -32,6 +32,7 @@
 #include <fstream>
 #include <memory>
 #include "DWAccelerator.hpp"
+#include "ParameterSetter.hpp"
 
 namespace xacc {
 namespace quantum {
@@ -39,7 +40,7 @@ namespace quantum {
 std::shared_ptr<AcceleratorBuffer> DWAccelerator::createBuffer(
 			const std::string& varId) {
 	auto options = RuntimeOptions::instance();
-	std::string solverName = "DW_2000Q_VFYC_1";
+	std::string solverName = "DW_2000Q_VFYC_2";
 	if (options->exists("dwave-solver")) {
 		solverName = (*options)["dwave-solver"];
 	}
@@ -122,15 +123,61 @@ const std::string DWAccelerator::processInput(
 		xacc::error("Invalid kernel.");
 	}
 
+	auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
+	if (!aqcBuffer) {
+		xacc::error("Invalid AcceleratorBuffer passed to DW Accelerator. Must be an AQCAcceleratorBuffer.");
+	}
+    
+    auto embedding = aqcBuffer->getEmbedding();
+    	// Get the ParameterSetter
+	std::shared_ptr<ParameterSetter> parameterSetter;
+	if (xacc::optionExists("dwave-parameter-setter")) {
+		parameterSetter = xacc::getService<
+				ParameterSetter>(xacc::getOption("dwave-parameter-setter"));
+	} else {
+		parameterSetter = xacc::getService<
+				ParameterSetter>("default");
+	}
+
+    int maxBitIdx = 0;
+    auto instructions = dwKernel->getInstructions();
+    for (auto i : instructions) {
+        auto qbit1 = i->bits()[0];
+		auto qbit2 = i->bits()[1];
+        if (qbit1 > maxBitIdx) maxBitIdx = qbit1;
+        if (qbit2 > maxBitIdx) maxBitIdx = qbit2;
+    }
+    
+    auto hardwareGraph = getAcceleratorConnectivity();
+    auto problemGraph = std::make_shared<DWGraph>(maxBitIdx);
+	for (auto inst : instructions) {
+		auto qbit1 = inst->bits()[0];
+		auto qbit2 = inst->bits()[1];
+		double weightOrBias = boost::get<double>(inst->getParameter(0));
+		if (qbit1 == qbit2) {
+			problemGraph->setVertexProperties(qbit1, weightOrBias);
+		} else {
+			problemGraph->addEdge(qbit1, qbit2,
+					weightOrBias);
+		}
+	}
+	// Set the parameters
+	auto insts = parameterSetter->setParameters(problemGraph, hardwareGraph,
+			embedding);
+
+    auto newKernel = std::make_shared<DWKernel>(dwKernel->name());
+	// Add the instructions to the Kernel
+	for (auto i : insts) {
+		newKernel->addInstruction(i);
+	}
 	std::vector<std::string> splitLines;
-	boost::split(splitLines, dwKernel->toString(""), boost::is_any_of("\n"));
+	boost::split(splitLines, newKernel->toString(""), boost::is_any_of("\n"));
 	auto nQMILines = splitLines.size();
-	auto options = RuntimeOptions::instance();
-	std::string jsonStr = "", solverName = "DW_2000Q_VFYC_1", solveType =
+	std::string jsonStr = "", solverName = "DW_2000Q_VFYC_2", solveType =
 			"ising", trials = "100", annealTime = "20";
 
-	if (options->exists("dwave-solver")) {
-		solverName = (*options)["dwave-solver"];
+	if (xacc::optionExists("dwave-solver")) {
+		solverName = xacc::getOption("dwave-solver");
 	}
 
 	if (!availableSolvers.count(solverName)) {
@@ -159,12 +206,12 @@ const std::string DWAccelerator::processInput(
 		}
 	}
 
-	if (options->exists("dwave-num-reads")) {
-		trials = (*options)["dwave-num-reads"];
+	if (xacc::optionExists("dwave-num-reads")) {
+		trials = xacc::getOption("dwave-num-reads");
 	}
 
-	if (options->exists("dwave-anneal-time")) {
-		annealTime = (*options)["dwave-anneal-time"];
+	if (xacc::optionExists("dwave-anneal-time")) {
+		annealTime = xacc::getOption("dwave-anneal-time");
 	}
 
 	jsonStr += "[{ \"solver\" : \"" + solverName + "\", \"type\" : \""
@@ -331,7 +378,7 @@ void DWAccelerator::findApiKeyInFile(std::string& apiKey, std::string& url,
  */
 std::shared_ptr<AcceleratorGraph> DWAccelerator::getAcceleratorConnectivity() {
 	auto options = RuntimeOptions::instance();
-	std::string solverName = "DW_2000Q_VFYC_1";
+	std::string solverName = "DW_2000Q_VFYC_2";
 
 	if (options->exists("dwave-solver")) {
 		solverName = (*options)["dwave-solver"];

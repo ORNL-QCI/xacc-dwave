@@ -43,10 +43,11 @@ class DWQMIListener : public DWQMIBaseListener {
 	protected:
 	        std::shared_ptr<Function> f;
 	public:
+            int maxBitIdx = 0;
 
             std::shared_ptr<Function> getKernel();
 
-            DWQMIListener();
+            DWQMIListener(const std::string& fname);
 
             virtual void enterInst(DWQMIParser::InstContext *ctx);
         
