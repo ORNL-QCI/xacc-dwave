@@ -36,6 +36,12 @@
 #include "AQCAcceleratorBuffer.hpp"
 #include "ParameterSetter.hpp"
 
+#include "DWQMIListener.hpp"
+#include "DWQMILexer.h"
+
+using namespace antlr4;
+using namespace dwqmi;
+
 namespace xacc {
 
 namespace quantum {
@@ -50,7 +56,24 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 	int nHardwareVerts = hardwareGraph->order();
 
 	// Set the Kernel Source code
-	kernelSource = src;
+	auto first = src.find("{")+1;
+	auto last = src.find_last_of("}");
+	kernelSource = src.substr (first,last-first);
+
+	xacc::info("Source:\n" + kernelSource);
+
+	std::cout << "RUNNIGN ANTLR\n";
+        ANTLRInputStream input(kernelSource);
+        DWQMILexer lexer(&input);
+        CommonTokenStream tokens(&lexer);
+        DWQMIParser parser(&tokens);
+
+        tree::ParseTree *tree = parser.mainprog();
+	std::cout << tree->toStringTree() << "\n";
+        DWQMIListener listener;
+        tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
+
+	std::cout << "DONE RUNING ANTLR\n";
 
 	// Here we assume, there is just one allocation
 	// of qubits for the D-Wave -- all of them.

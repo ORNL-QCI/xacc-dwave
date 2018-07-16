@@ -1,0 +1,17 @@
+T__0=1
+T__1=2
+T__2=3
+COMMENT=4
+ANNEAL=5
+ID=6
+REAL=7
+MINUS=8
+INT=9
+STRING=10
+EOL=11
+WS=12
+';'=1
+'forward'=2
+'reverse'=3
+'anneal'=5
+'-'=8

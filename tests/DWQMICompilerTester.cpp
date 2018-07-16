@@ -220,20 +220,20 @@ BOOST_AUTO_TEST_CASE(checkFactoring15OneToOneMapping) {
 
 	const std::string factoring15QMI =
 			"__qpu__ factor15() {\n"
-			"   0 0 20\n"
-			"   1 1 50\n"
-			"   2 2 60\n"
-			"   4 4 50\n"
-			"   5 5 60\n"
-			"   6 6 -160\n"
-			"   1 4 -1000\n"
-			"   2 5 -1000\n"
-			"   0 4 -14\n"
-			"   0 5 -12\n"
-			"   0 6 32\n"
-			"   1 5 68\n"
-			"   1 6 -128\n"
-			"   2 6 -128\n"
+			"0 0 20.0;\n"
+			"1 1 50.0;\n"
+			"2 2 60.0;\n"
+			"4 4 50.0;\n"
+			"5 5 60.0;\n"
+			"6 6 -160.0;\n"
+			"1 4 -1000.0;\n"
+			"2 5 -1000.0;\n"
+			"0 4 -14.0;\n"
+			"0 5 -12.0;\n"
+			"0 6 32.0;\n"
+			"1 5 68.0;\n"
+			"1 6 -128.0;\n"
+			"2 6 -128.0;\n"
 			"}";
 
 	auto options = xacc::RuntimeOptions::instance();
@@ -249,7 +249,6 @@ BOOST_AUTO_TEST_CASE(checkFactoring15OneToOneMapping) {
 
 	auto qmi = ir->getKernel("factor15")->toString("");
 
-	std::cout << qmi << "\n";
 
 	const std::string expected =
 		"0 0 20\n"
@@ -268,7 +267,6 @@ BOOST_AUTO_TEST_CASE(checkFactoring15OneToOneMapping) {
 		"2 5 -1000\n"
 		"2 6 -128\n";
 
-	std::cout << "QMI:\n" << qmi << "\n";
 	BOOST_VERIFY(expected == qmi);
         xacc::Finalize();
 }
