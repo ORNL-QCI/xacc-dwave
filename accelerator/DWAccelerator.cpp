@@ -125,18 +125,21 @@ const std::string DWAccelerator::processInput(
 	std::vector<std::string> splitLines;
 	boost::split(splitLines, dwKernel->toString(""), boost::is_any_of("\n"));
 	auto nQMILines = splitLines.size();
-	auto options = RuntimeOptions::instance();
 	std::string jsonStr = "", solverName = "DW_2000Q_VFYC_2", solveType =
 			"ising", trials = "100", annealTime = "20";
 
-	if (options->exists("dwave-solver")) {
-		solverName = (*options)["dwave-solver"];
+	if (xacc::optionExists("dwave-solver")) {
+		solverName = xacc::getOption("dwave-solver");
 	}
 
 	if (!availableSolvers.count(solverName)) {
 		xacc::error(solverName + " is not available.");
 	}
 
+    if (xacc::optionExists("dwave-solve-type")) {
+        solveType = xacc::getOption("dwave-solve-type");
+    }
+    
 	auto solver = availableSolvers[solverName];
 
 	// Normalize the QMI data
@@ -159,12 +162,12 @@ const std::string DWAccelerator::processInput(
 		}
 	}
 
-	if (options->exists("dwave-num-reads")) {
-		trials = (*options)["dwave-num-reads"];
+	if (xacc::optionExists("dwave-num-reads")) {
+		trials = xacc::getOption("dwave-num-reads");
 	}
 
-	if (options->exists("dwave-anneal-time")) {
-		annealTime = (*options)["dwave-anneal-time"];
+	if (xacc::optionExists("dwave-anneal-time")) {
+		annealTime = xacc::getOption("dwave-anneal-time");
 	}
 
 	jsonStr += "[{ \"solver\" : \"" + solverName + "\", \"type\" : \""
