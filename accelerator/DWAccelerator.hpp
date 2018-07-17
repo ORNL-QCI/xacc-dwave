@@ -170,7 +170,8 @@ public:
 				("dwave-num-reads", value<std::string>(), "The number of executions on the chip for the given problem.")
 				("dwave-anneal-time", value<std::string>(), "The time to evolve the chip - an integer in microseconds.")
 				("dwave-thermalization", value<std::string>(), "The thermalization...")
-				("dwave-list-solvers", "List the available solvers at the Qubist URL.");
+				("dwave-list-solvers", "List the available solvers at the Qubist URL.")
+                ("dwave-solve-type", value<std::string>(), "The solve type, qubo or ising");
 		return desc;
 	}
 

@@ -184,6 +184,10 @@ const std::string DWAccelerator::processInput(
 		xacc::error(solverName + " is not available.");
 	}
 
+    if (xacc::optionExists("dwave-solve-type")) {
+        solveType = xacc::getOption("dwave-solve-type");
+    }
+    
 	auto solver = availableSolvers[solverName];
 
 	// Normalize the QMI data
