@@ -35,6 +35,7 @@ if(DWAVE_BUILD_TESTS)
    add_subdirectory(examples)
    include_directories(${CMAKE_SOURCE_DIR}/accelerator)
    include_directories(${CMAKE_SOURCE_DIR}/compiler)
+   include_directories(${CMAKE_SOURCE_DIR}/compiler/runtime/src)
    add_subdirectory(tests)
 endif()
    

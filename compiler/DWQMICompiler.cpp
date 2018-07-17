@@ -90,7 +90,9 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
     DWQMILexer lexer(&input);
     CommonTokenStream tokens(&lexer);
     DWQMIParser parser(&tokens);
-
+    parser.removeErrorListeners();
+    parser.addErrorListener(new DWQMIErrorListener());
+    
     tree::ParseTree *tree = parser.mainprog();
     DWQMIListener listener(fName, params);
     tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);

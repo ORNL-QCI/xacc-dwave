@@ -139,6 +139,7 @@ const std::string DWAccelerator::processInput(
 				ParameterSetter>("default");
 	}
 
+    std::vector<std::pair<double, double>> annealingSchedule;
     int maxBitIdx = 0;
     auto instructions = dwKernel->getInstructions();
     for (auto i : instructions) {
@@ -148,6 +149,8 @@ const std::string DWAccelerator::processInput(
             if (qbit1 > maxBitIdx) maxBitIdx = qbit1;
             if (qbit2 > maxBitIdx) maxBitIdx = qbit2;
         } else if (i->name() == "anneal") {
+
+            // fill annealing schedule
         }
     }
     

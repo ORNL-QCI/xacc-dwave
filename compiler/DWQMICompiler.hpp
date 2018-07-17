@@ -34,11 +34,22 @@
 #include "DWIR.hpp"
 #include "DWGraph.hpp"
 #include "EmbeddingAlgorithm.hpp"
+#include "antlr4-runtime.h"
 
 namespace xacc {
 
 namespace quantum {
 
+class DWQMIErrorListener : public antlr4::BaseErrorListener {
+    public:
+    void syntaxError(antlr4::Recognizer *recognizer, antlr4::Token * offendingSymbol, size_t line, size_t charPositionInLine, const std::string &msg, std::exception_ptr e) override {
+        std::ostringstream output;
+        output << "Invalid DQWMI source: ";
+        output << "line " << line << ":" << charPositionInLine << " " << msg;
+        xacc::error(output.str());
+    }
+};
+        
 /**
  * The DWQMICompiler is an XACC Compiler that compiles
  * D-Wave quantum machine instructions to produce an
