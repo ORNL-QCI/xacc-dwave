@@ -142,25 +142,31 @@ const std::string DWAccelerator::processInput(
     int maxBitIdx = 0;
     auto instructions = dwKernel->getInstructions();
     for (auto i : instructions) {
-        auto qbit1 = i->bits()[0];
-		auto qbit2 = i->bits()[1];
-        if (qbit1 > maxBitIdx) maxBitIdx = qbit1;
-        if (qbit2 > maxBitIdx) maxBitIdx = qbit2;
+        if (i->name() == "dw-qmi") {
+            auto qbit1 = i->bits()[0];
+		    auto qbit2 = i->bits()[1];
+            if (qbit1 > maxBitIdx) maxBitIdx = qbit1;
+            if (qbit2 > maxBitIdx) maxBitIdx = qbit2;
+        } else if (i->name() == "anneal") {
+        }
     }
     
     auto hardwareGraph = getAcceleratorConnectivity();
     auto problemGraph = std::make_shared<DWGraph>(maxBitIdx);
 	for (auto inst : instructions) {
-		auto qbit1 = inst->bits()[0];
-		auto qbit2 = inst->bits()[1];
-		double weightOrBias = boost::get<double>(inst->getParameter(0));
-		if (qbit1 == qbit2) {
-			problemGraph->setVertexProperties(qbit1, weightOrBias);
-		} else {
-			problemGraph->addEdge(qbit1, qbit2,
-					weightOrBias);
-		}
+        if (inst->name() == "dw-qmi") {
+		    auto qbit1 = inst->bits()[0];
+		    auto qbit2 = inst->bits()[1];
+		    double weightOrBias = boost::get<double>(inst->getParameter(0));
+		    if (qbit1 == qbit2) {
+		    	problemGraph->setVertexProperties(qbit1, weightOrBias);
+		    } else {
+		    	problemGraph->addEdge(qbit1, qbit2,
+		    			weightOrBias);
+		    }
+        }
 	}
+    
 	// Set the parameters
 	auto insts = parameterSetter->setParameters(problemGraph, hardwareGraph,
 			embedding);

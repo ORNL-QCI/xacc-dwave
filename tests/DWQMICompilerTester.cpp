@@ -28,10 +28,7 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE DWaveCompilerTester
-
-#include <boost/test/included/unit_test.hpp>
+#include <gtest/gtest.h>
 #include "DWQMICompiler.hpp"
 #include "XACC.hpp"
 #include "AQCAcceleratorBuffer.hpp"
@@ -170,52 +167,8 @@ public:
 
 };
 
-//
-//BOOST_AUTO_TEST_CASE(checkSimpleCompile) {
-//
-//	DefaultParameterSetter setter;
-//	EmbeddingAlgorithmRegistry::instance()->add(FakeEmbedding().name(),
-//			std::make_shared<EmbeddingAlgorithmRegistry::CreatorFunction>(
-//					[]() {return std::make_shared<FakeEmbedding>();}));
-//
-//	auto compiler = std::make_shared<DWQMICompiler>();
-//
-//	const std::string simpleQMI =
-//			"__qpu__ dwaveKernel() {\n"
-//			"   0 0 0.98\n"
-//			"   1 1 .33\n"
-//			"   2 2 .44\n"
-//			"   0 1 .22\n"
-//			"   0 2 .55\n"
-//			"   1 2 .11\n"
-//			"}";
-//
-//	auto options = xacc::RuntimeOptions::instance();
-//	options->insert(std::make_pair("dwave-embedding", "fake-embedding"));
-//
-//	auto acc = std::make_shared<FakeDWAcc>();
-//
-//	auto ir = compiler->compile(simpleQMI, acc);
-//
-//	auto qmi = ir->getKernel("dwaveKernel")->toString("");
-//
-//	const std::string expectedQMI = "0 0 0.49\n"
-//			"4 4 0.49\n"
-//			"1 1 0.33\n"
-//			"5 5 0.44\n"
-//			"0 4 -1.75\n"
-//			"0 5 0.55\n"
-//			"1 4 0.22\n"
-//			"1 5 0.11\n";
-//
-//	std::cout << "\n" << qmi << "\n";
-//	BOOST_VERIFY(expectedQMI == qmi);
-//
-//}
+TEST(DWQMICompilerTester, checkFactoring15OneToOneMapping) {
 
-BOOST_AUTO_TEST_CASE(checkFactoring15OneToOneMapping) {
-
-        xacc::Initialize();
 	auto compiler = std::make_shared<DWQMICompiler>();
 
 	const std::string factoring15QMI =
@@ -267,6 +220,156 @@ BOOST_AUTO_TEST_CASE(checkFactoring15OneToOneMapping) {
 )expected";
 
     std::cout << "QMI:\n" << qmi << "\n";
-	BOOST_VERIFY(expected == qmi);
-    xacc::Finalize();
+	EXPECT_TRUE(expected == qmi);
+
+}
+
+TEST(DWQMICompilerTester,checkVariableWeight) {
+	auto compiler = std::make_shared<DWQMICompiler>();
+
+	const std::string testsrc = R"testsrc(__qpu__ f(AcceleratorBuffer b, double h0) {
+        0 0 h0;
+    })testsrc";
+
+	xacc::setOption("dwave-embedding","trivial");
+
+	auto acc = std::make_shared<FakeDWAcc>();
+
+	auto ir = compiler->compile(testsrc, acc);
+
+	auto qmi = ir->getKernel("f")->toString("");
+    std::cout << "QMI:\n" << qmi << "\n";  
+
+    auto f = ir->getKernel("f");
+    EXPECT_TRUE(f->getInstruction(0)->getParameter(0).which() == 3);
+    EXPECT_TRUE(boost::get<std::string>(f->getInstruction(0)->getParameter(0)) == "h0");
+
+    Eigen::VectorXd params(1);
+    params(0) = 2.2;
+    auto evaled = ir->getKernel("f")->operator()(params);  
+
+    EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).which() == 1);
+    EXPECT_NEAR(boost::get<double>(evaled->getInstruction(0)->getParameter(0)), 2.2, 1e-4);
+
+    std::cout << "HELLO:\n" << evaled->toString("") << "\n";
+
+    params(0) = 3.3;
+    evaled = ir->getKernel("f")->operator()(params);  
+
+    EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).which() == 1);
+    EXPECT_NEAR(boost::get<double>(evaled->getInstruction(0)->getParameter(0)), 3.3, 1e-4);
+
+    std::cout << "HELLO:\n" << evaled->toString("") << "\n";
+}
+TEST(DWQMICompilerTester, checkMultipleVariableWeights) {
+
+    auto compiler = std::make_shared<DWQMICompiler>();
+
+    const std::string testsrc2 = R"testsrc(__qpu__ f(AcceleratorBuffer b, double h0, double h1) {
+        0 0 h0;
+        1 1 h1;
+    })testsrc";
+	auto acc = std::make_shared<FakeDWAcc>();
+
+	auto ir = compiler->compile(testsrc2, acc);
+
+	auto qmi = ir->getKernel("f")->toString("");
+    std::cout << "QMI:\n" << qmi << "\n";  
+
+    auto f = ir->getKernel("f");
+    EXPECT_TRUE(f->getInstruction(0)->getParameter(0).which() == 3);
+    EXPECT_TRUE(f->getInstruction(1)->getParameter(0).which() == 3);
+    EXPECT_TRUE(boost::get<std::string>(f->getInstruction(0)->getParameter(0)) == "h0");
+    EXPECT_TRUE(boost::get<std::string>(f->getInstruction(1)->getParameter(0)) == "h1");
+
+    Eigen::VectorXd params2(2);
+    params2(0) = 2.2;
+    params2(1) = 3.3;
+    std::cout << "Evaluating 2 params\n";
+    auto evaled = ir->getKernel("f")->operator()(params2);  
+    std::cout << "done evaluating 2 params\n";
+
+    EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).which() == 1);
+    EXPECT_TRUE(evaled->getInstruction(1)->getParameter(0).which() == 1);
+    EXPECT_NEAR(boost::get<double>(evaled->getInstruction(0)->getParameter(0)), 2.2, 1e-4);
+    EXPECT_NEAR(boost::get<double>(evaled->getInstruction(1)->getParameter(0)), 3.3, 1e-4);
+
+    std::cout << "HELLO:\n" << evaled->toString("") << "\n";
+}
+
+TEST(DWQMICompilerTester, checkAnneal) {
+
+    auto compiler = std::make_shared<DWQMICompiler>();
+
+    const std::string testsrc = R"testsrc(__qpu__ f(AcceleratorBuffer b, double h0, double h1) {
+        anneal 10 10 10;
+        0 0 h0;
+        1 1 h1;
+    })testsrc";
+	auto acc = std::make_shared<FakeDWAcc>();
+
+	auto ir = compiler->compile(testsrc, acc);
+    auto f = ir->getKernel("f");
+	auto qmi = ir->getKernel("f")->toString("");
+    std::cout << "QMI:\n" << qmi << "\n";  
+    EXPECT_EQ(boost::get<double>(f->getInstruction(0)->getParameter(0)), 10.0);
+    EXPECT_EQ(boost::get<double>(f->getInstruction(0)->getParameter(1)), 10.0);
+    EXPECT_EQ(boost::get<double>(f->getInstruction(0)->getParameter(2)), 10.0);
+
+}
+
+TEST(DWQMICompilerTester, checkVariableAnneal) {
+
+    auto compiler = std::make_shared<DWQMICompiler>();
+
+    const std::string testsrc = R"testsrc(__qpu__ f(AcceleratorBuffer b, double h0, double h1, double ts, double tp, double tq) {
+        anneal ts tp tq;
+        0 0 h0;
+        1 1 h1;
+    })testsrc";
+	auto acc = std::make_shared<FakeDWAcc>();
+
+	auto ir = compiler->compile(testsrc, acc);
+    auto f = ir->getKernel("f");
+	auto qmi = ir->getKernel("f")->toString("");
+    std::cout << "QMI:\n" << qmi << "\n";  
+    
+    Eigen::VectorXd params(5);
+    params << 1, 2, 3, 4, 5;
+    auto evaled = f->operator()(params);
+    auto expected = R"expected(anneal ta = 3, tp = 4, tq = 5, forward
+0 0 1
+1 1 2
+)expected";
+    std::cout << "HELLO WORKED:\n" << evaled->toString("q") << "\n";
+    EXPECT_EQ(expected, evaled->toString(""));
+
+    const std::string testsrc2 = R"testsrc(__qpu__ f(AcceleratorBuffer b, double h0, double h1, double ts, double tp, double tq) {
+        anneal ts tp tq reverse;
+        0 0 h0;
+        1 1 h1;
+    })testsrc";
+
+	ir = compiler->compile(testsrc2, acc);
+    f = ir->getKernel("f");
+	qmi = f->toString("");
+    std::cout << "QMI2:\n" << qmi << "\n";  
+    
+    evaled = f->operator()(params);
+    expected = R"expected(anneal ta = 3, tp = 4, tq = 5, reverse
+0 0 1
+1 1 2
+)expected";
+    std::cout << "HELLO WORKED2:\n" << evaled->toString("") << "\n";
+
+    EXPECT_EQ(expected, evaled->toString(""));
+
+}
+
+int main(int argc, char** argv) {
+   xacc::Initialize(argc, argv);
+   ::testing::InitGoogleTest(&argc, argv);
+   auto ret = RUN_ALL_TESTS();
+   xacc::Finalize();
+   return ret;
 }

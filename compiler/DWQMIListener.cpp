@@ -43,14 +43,53 @@ using namespace dwqmi;
 namespace xacc {
 namespace quantum {
 
-DWQMIListener::DWQMIListener(const std::string& fname) {
-	f = std::make_shared<DWKernel>(fname); 
+DWQMIListener::DWQMIListener(const std::string& fname, std::vector<InstructionParameter> params) {
+	f = std::make_shared<DWKernel>(fname, params); 
 }
 
 std::shared_ptr<Function> DWQMIListener::getKernel() {
 	return f;
 }
+
+void DWQMIListener::enterAnnealdecl(DWQMIParser::AnnealdeclContext * ctx) {
+    if (!foundAnneal) {
+
+        std::vector<InstructionParameter> params;
+        auto taStr = ctx->ta()->getText();
+        auto tpStr = ctx->tp()->getText();
+        auto tqStr = ctx->tq()->getText();
         
+        auto is_double = [](const std::string& s) -> bool
+	    {
+	        try {
+		        std::stod(s);
+    	    } catch(std::exception& e) {
+	    	    return false;
+	        }
+    	    return true;
+	    };
+    
+        auto taparam = is_double(taStr) ? InstructionParameter(std::stod(taStr)) : InstructionParameter(taStr);
+        auto tpparam = is_double(tpStr) ? InstructionParameter(std::stod(tpStr)) : InstructionParameter(tpStr);
+        auto tqparam = is_double(tqStr) ? InstructionParameter(std::stod(tqStr)) : InstructionParameter(tqStr);
+
+        std::string direction = "forward";
+        if (ctx->direction() != nullptr) {
+            std::cout << ctx->direction()->getText() << "\n";
+            if (ctx->direction()->forward() == nullptr) {
+                direction = "reverse";
+            } 
+        }
+
+        auto anneal = std::make_shared<Anneal>(taparam, tpparam, tqparam, InstructionParameter(direction));
+        f->addInstruction(anneal);
+        foundAnneal = true;
+    } else {
+        xacc::error("Error - You can only provide one anneal instruction.");
+    }
+    return;
+}
+  
 void DWQMIListener::enterInst(dwqmi::DWQMIParser::InstContext *ctx) {
 
     int bit1, bit2;
@@ -75,14 +114,18 @@ void DWQMIListener::enterInst(dwqmi::DWQMIParser::InstContext *ctx) {
     if (bit1 > maxBitIdx) maxBitIdx = bit1;
     if (bit2 > maxBitIdx) maxBitIdx = bit2;
 
-    auto val = ctx->real()->getText();
-    auto param = is_double(val) ? InstructionParameter(std::stod(val)) : InstructionParameter(val);
+    std::string valStr;
+    if (ctx->real() == nullptr) {
+        valStr = ctx->id()->getText();
+    } else {
+        valStr = ctx->real()->getText();
+    }
+    auto param = is_double(valStr) ? InstructionParameter(std::stod(valStr)) : InstructionParameter(valStr);
     
 	auto instruction = std::make_shared<DWQMI>(std::stoi(ctx->INT(0)->getText()), 
                                                 std::stoi(ctx->INT(1)->getText()), 
                                                 param);
         
-	std::cout << "hi: " << instruction->toString("") << "\n";
     f->addInstruction(instruction);
     return;
 }

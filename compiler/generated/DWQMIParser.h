@@ -128,6 +128,7 @@ public:
     virtual size_t getRuleIndex() const override;
     std::vector<antlr4::tree::TerminalNode *> INT();
     antlr4::tree::TerminalNode* INT(size_t i);
+    IdContext *id();
     RealContext *real();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -160,6 +161,7 @@ public:
     virtual size_t getRuleIndex() const override;
     IdContext *id();
     RealContext *real();
+    antlr4::tree::TerminalNode *INT();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -174,6 +176,7 @@ public:
     virtual size_t getRuleIndex() const override;
     IdContext *id();
     RealContext *real();
+    antlr4::tree::TerminalNode *INT();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -188,6 +191,7 @@ public:
     virtual size_t getRuleIndex() const override;
     IdContext *id();
     RealContext *real();
+    antlr4::tree::TerminalNode *INT();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;

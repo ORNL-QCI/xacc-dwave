@@ -61,21 +61,38 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 	xacc::info("Source:\n" + kernelSource);
 
     // Get the function name
-    std::vector<std::string> lines, fLineSpaces;    
+    std::vector<std::string> lines, fLineSpaces, fLineCommas;    
 	boost::split(lines, src, boost::is_any_of("\n"));
 	auto functionLine = lines[0];
 	boost::split(fLineSpaces, functionLine, boost::is_any_of(" "));
 	auto fName = fLineSpaces[1];
 	boost::trim(fName);
 	fName = fName.substr(0, fName.find_first_of("("));
-    
+    boost::split(fLineCommas, functionLine, boost::is_any_of(","));
+	std::vector<InstructionParameter> params;
+	for (int i = 1; i < fLineCommas.size(); i++) {
+		boost::trim(fLineCommas[i]);
+		auto arg = fLineCommas[i];
+		std::vector<std::string> splitSpace;
+		if (boost::contains(arg, ")")) {
+			arg = arg.substr(0, arg.find_first_of(")"));
+		}
+
+		boost::split(splitSpace, arg, boost::is_any_of(" "));
+
+		arg = splitSpace[1];
+
+		InstructionParameter p(arg);
+		params.push_back(p);
+	}
+
     ANTLRInputStream input(kernelSource);
     DWQMILexer lexer(&input);
     CommonTokenStream tokens(&lexer);
     DWQMIParser parser(&tokens);
 
     tree::ParseTree *tree = parser.mainprog();
-    DWQMIListener listener(fName);
+    DWQMIListener listener(fName, params);
     tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
 
 	// Here we assume, there is just one allocation
@@ -100,14 +117,16 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 	// Create a graph representation of the problem
 	auto problemGraph = std::make_shared<DWGraph>(maxBitIdx);
 	for (auto inst : instructions) {
-		auto qbit1 = inst->bits()[0];
-		auto qbit2 = inst->bits()[1];
-		if (qbit1 == qbit2) {
-			problemGraph->setVertexProperties(qbit1, 1.0);
-		} else {
-			problemGraph->addEdge(qbit1, qbit2,
-					1.0);
-		}
+        if (inst->name() == "dw-qmi") {
+		    auto qbit1 = inst->bits()[0];
+		    auto qbit2 = inst->bits()[1];
+		    if (qbit1 == qbit2) {
+		    	problemGraph->setVertexProperties(qbit1, 1.0);
+		    } else {
+		    	problemGraph->addEdge(qbit1, qbit2,
+		    			1.0);
+		    }
+        }
 	}
 
     // Embed the problem

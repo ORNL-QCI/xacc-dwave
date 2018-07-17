@@ -61,9 +61,9 @@ comment
    ;
 
 inst 
-   : INT INT real
+   : INT INT (id | real)
    ;
-
+   
 annealdecl
    : anneal ta tp tq direction?
    ;
@@ -72,15 +72,18 @@ annealdecl
 ta
    : id
    | real 
+   | INT
    ;
 
 tp
    : id
    | real 
+   | INT
    ;
 tq
    : id
    | real 
+   | INT
    ;
 
 anneal

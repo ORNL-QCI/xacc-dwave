@@ -39,17 +39,23 @@ using namespace dwqmi;
 namespace xacc {
 namespace quantum {
 
+/**
+ * 
+ */
 class DWQMIListener : public DWQMIBaseListener {
 	protected:
 	        std::shared_ptr<Function> f;
+            bool foundAnneal = false;
 	public:
             int maxBitIdx = 0;
 
             std::shared_ptr<Function> getKernel();
 
-            DWQMIListener(const std::string& fname);
+            DWQMIListener(const std::string& fname, std::vector<InstructionParameter> params);
 
-            virtual void enterInst(DWQMIParser::InstContext *ctx);
+            virtual void enterInst(DWQMIParser::InstContext *ctx) override;
+            virtual void enterAnnealdecl(DWQMIParser::AnnealdeclContext * ctx) override;
+
         
 };
     
