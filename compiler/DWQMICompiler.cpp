@@ -108,7 +108,7 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 
     // Get the constructed DW Kernel
     auto dwKernel = listener.getKernel();
-
+    
 	// Now we have a qubits set. If we used 0-N qubits,
 	// then this set size will be N, but if we skipped some
 	// bits, then it will be < N. Get the maximum int in this set
@@ -116,9 +116,10 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 	int maxBitIdx = listener.maxBitIdx; 
 	maxBitIdx++;
 
+    std::cout << "COMPILER MAX BIT IDX = " << maxBitIdx << "\n";
 	// Create a graph representation of the problem
 	auto problemGraph = std::make_shared<DWGraph>(maxBitIdx);
-	for (auto inst : instructions) {
+	for (auto inst : dwKernel->getInstructions()) {
         if (inst->name() == "dw-qmi") {
 		    auto qbit1 = inst->bits()[0];
 		    auto qbit2 = inst->bits()[1];

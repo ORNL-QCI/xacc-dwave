@@ -116,7 +116,7 @@ const std::string DWAccelerator::processInput(
                 std::vector<std::shared_ptr<Function>> functions) {
 
 	if (functions.size() > 1)
-		xacc::error("RigettiAccelerator can only launch one job at a time.");
+		xacc::error("D-Wave Accelerator can only launch one job at a time.");
 
 	auto dwKernel = std::dynamic_pointer_cast<DWKernel>(functions[0]);
 	if (!dwKernel) {
@@ -129,6 +129,11 @@ const std::string DWAccelerator::processInput(
 	}
     
     auto embedding = aqcBuffer->getEmbedding();
+    for (auto& kv : embedding) {
+        std::cout << kv.first << ": ";
+        for (auto e : kv.second) std::cout << e << ", ";
+        std::cout << "\n";
+    }
     	// Get the ParameterSetter
 	std::shared_ptr<ParameterSetter> parameterSetter;
 	if (xacc::optionExists("dwave-parameter-setter")) {
@@ -139,46 +144,52 @@ const std::string DWAccelerator::processInput(
 				ParameterSetter>("default");
 	}
 
-    std::vector<std::pair<double, double>> annealingSchedule;
-    int maxBitIdx = 0;
+    // Get the maximum qubit index
     auto instructions = dwKernel->getInstructions();
-    for (auto i : instructions) {
-        if (i->name() == "dw-qmi") {
-            auto qbit1 = i->bits()[0];
-		    auto qbit2 = i->bits()[1];
+    int maxBitIdx = 0;
+	for (auto inst : instructions) {
+        if (inst->name() == "dw-qmi") {
+		    auto qbit1 = inst->bits()[0];
+		    auto qbit2 = inst->bits()[1];
             if (qbit1 > maxBitIdx) maxBitIdx = qbit1;
             if (qbit2 > maxBitIdx) maxBitIdx = qbit2;
-        } else if (i->name() == "anneal") {
-
-            // fill annealing schedule
-        }
+        } 
     }
     
+    // Reconstruct the Problem Graph
+    std::cout << maxBitIdx << ", ACTUAL KERNEL IS \n" << dwKernel->toString("") << "\n";
+    std::shared_ptr<Anneal> annealingSchedule;
     auto hardwareGraph = getAcceleratorConnectivity();
-    auto problemGraph = std::make_shared<DWGraph>(maxBitIdx);
+    auto problemGraph = std::make_shared<DWGraph>(maxBitIdx+1);
 	for (auto inst : instructions) {
         if (inst->name() == "dw-qmi") {
 		    auto qbit1 = inst->bits()[0];
 		    auto qbit2 = inst->bits()[1];
 		    double weightOrBias = boost::get<double>(inst->getParameter(0));
+            std::cout << "HEY WE ARE HERE: " << qbit1 << ", " << qbit2 << ", " << weightOrBias << "\n";
 		    if (qbit1 == qbit2) {
 		    	problemGraph->setVertexProperties(qbit1, weightOrBias);
 		    } else {
 		    	problemGraph->addEdge(qbit1, qbit2,
 		    			weightOrBias);
 		    }
+        } else if (inst->name() == "anneal") {
+            // get annealing schedule
+            annealingSchedule = std::make_shared<Anneal>(inst->getParameters());
         }
 	}
     
-	// Set the parameters
+	// Set the parameters with the problem graph, the hardware graph, and embedding
 	auto insts = parameterSetter->setParameters(problemGraph, hardwareGraph,
 			embedding);
 
     auto newKernel = std::make_shared<DWKernel>(dwKernel->name());
 	// Add the instructions to the Kernel
 	for (auto i : insts) {
+        std::cout << "HELLO: " << i->toString("") << "\n";
 		newKernel->addInstruction(i);
 	}
+    
 	std::vector<std::string> splitLines;
 	boost::split(splitLines, newKernel->toString(""), boost::is_any_of("\n"));
 	auto nQMILines = splitLines.size();
@@ -199,25 +210,79 @@ const std::string DWAccelerator::processInput(
     
 	auto solver = availableSolvers[solverName];
 
-	// Normalize the QMI data
-	auto allWeightValues = dwKernel->getAllCouplers();
-	auto minWeight = *std::min_element(allWeightValues.begin(),
-			allWeightValues.end());
-	auto maxWeight = *std::max_element(allWeightValues.begin(),
-			allWeightValues.end());
+    std::vector<std::pair<double,double>> as;
+    std::string annealingStr = "";
+    double s = 1;
+    if (annealingSchedule) {
+        auto ta = boost::get<double>(annealingSchedule->getParameter(0));
+        auto tp = boost::get<double>(annealingSchedule->getParameter(1));
+        auto tq = boost::get<double>(annealingSchedule->getParameter(2));
+        auto direction = boost::get<std::string>(annealingSchedule->getParameter(3));
+        
+        auto ti = ta + tp;
+        auto tf = ta + tp + tq;
+        auto end = std::make_pair(tf, 1.0);
+        auto midpt = std::make_pair(tq, s);
+        auto midpause = std::make_pair(ti, s);
+        
+        if (direction=="forward") {
+            as.push_back({0,0});
+        } else {
+            as.push_back({0,1});
+        }
 
-	// Check if we should normalize Bias values
-	if (minWeight < solver.jRangeMin || maxWeight > solver.jRangeMax) {
-		for (auto inst : dwKernel->getInstructions()) {
-			auto divisor =
-					(std::fabs(minWeight) > std::fabs(maxWeight)) ?
-							std::fabs(minWeight) : std::fabs(maxWeight);
-			auto weight = boost::get<double>(inst->getParameter(0));
-			auto newWeight = weight / divisor;
-			InstructionParameter p(newWeight);
-			inst->setParameter(0, p);
-		}
-	}
+        if (tp == 0 && tq == 0) {
+            as.push_back(end);
+        } else if (tp == 0) {
+            if (end .first== midpt.first && end.second == midpt.second) {
+                as.push_back(end);
+            } else {
+                as.push_back(midpt);
+                as.push_back(end);
+            }
+        } else {
+            if (end.first == midpause.first && end.second == midpause.second) {
+                as.push_back(midpt);
+                as.push_back(end);
+            } else {
+                as.push_back(midpt);
+                as.push_back(midpause);
+                as.push_back(end);
+            }
+        }
+
+    } else {
+        as.push_back({0,0});
+        as.push_back({std::stod(annealTime), s});
+    }
+    
+    std::stringstream ss;
+    ss << "[";
+    for (auto e : as) {
+        ss << "[" << e.first << "," << e.second << "],";
+    }
+    annealingStr = ss.str().substr(0,ss.str().length()-1)+"]";
+    std::cout << "Annealing Schedule: " << annealingStr << "\n";
+    
+	// Normalize the QMI data
+	// auto allWeightValues = dwKernel->getAllCouplers();
+	// auto minWeight = *std::min_element(allWeightValues.begin(),
+	// 		allWeightValues.end());
+	// auto maxWeight = *std::max_element(allWeightValues.begin(),
+	// 		allWeightValues.end());
+
+	// // Check if we should normalize Bias values
+	// if (minWeight < solver.jRangeMin || maxWeight > solver.jRangeMax) {
+	// 	for (auto inst : dwKernel->getInstructions()) {
+	// 		auto divisor =
+	// 				(std::fabs(minWeight) > std::fabs(maxWeight)) ?
+	// 						std::fabs(minWeight) : std::fabs(maxWeight);
+	// 		auto weight = boost::get<double>(inst->getParameter(0));
+	// 		auto newWeight = weight / divisor;
+	// 		InstructionParameter p(newWeight);
+	// 		inst->setParameter(0, p);
+	// 	}
+	// }
 
 	if (xacc::optionExists("dwave-num-reads")) {
 		trials = xacc::getOption("dwave-num-reads");
@@ -230,8 +295,8 @@ const std::string DWAccelerator::processInput(
 	jsonStr += "[{ \"solver\" : \"" + solverName + "\", \"type\" : \""
 			+ solveType + "\", \"data\" : \"" + std::to_string(solver.nQubits)
 			+ " " + std::to_string(nQMILines - 1) + "\\n"
-			+ dwKernel->toString("") + "\", \"params\": { \"num_reads\" : "
-			+ trials + ", \"annealing_time\" : " + annealTime + "} }]";
+			+ newKernel->toString("") + "\", \"params\": { \"num_reads\" : "
+			+ trials + ", \"annealing_schedule\" : " + annealingStr + "} }]";
 	boost::replace_all(jsonStr, "\n", "\\n");
 
 	return jsonStr;
@@ -264,7 +329,14 @@ std::vector<std::shared_ptr<AcceleratorBuffer>> DWAccelerator::processResponse(
 			jobCompleted = true;
 		}
 
+        if (boost::contains(msg, "FAILED")) {
+            Document d;
+            d.Parse(msg);
+            xacc::error("D-Wave Execution Failure: " + std::string(d["error_message"].GetString()));
+        }
+        
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        xacc::info(msg);
 	}
 
 	// We've completed, so let's get
@@ -390,11 +462,10 @@ void DWAccelerator::findApiKeyInFile(std::string& apiKey, std::string& url,
  * @return connectivityGraph The graph structure of this Accelerator
  */
 std::shared_ptr<AcceleratorGraph> DWAccelerator::getAcceleratorConnectivity() {
-	auto options = RuntimeOptions::instance();
 	std::string solverName = "DW_2000Q_VFYC_2";
 
-	if (options->exists("dwave-solver")) {
-		solverName = (*options)["dwave-solver"];
+	if (xacc::optionExists("dwave-solver")) {
+		solverName = xacc::getOption("dwave-solver");
 	}
 
 	if (!availableSolvers.count(solverName)) {
