@@ -209,56 +209,16 @@ const std::string DWAccelerator::processInput(
 
     std::vector<std::pair<double,double>> as;
     std::string annealingStr = "";
+    AnnealScheduleGenerator gen;
     double s = 1;
     if (annealingSchedule) {
-        auto ta = boost::get<double>(annealingSchedule->getParameter(0));
-        auto tp = boost::get<double>(annealingSchedule->getParameter(1));
-        auto tq = boost::get<double>(annealingSchedule->getParameter(2));
-        auto direction = boost::get<std::string>(annealingSchedule->getParameter(3));
-        
-        auto ti = ta + tp;
-        auto tf = ta + tp + tq;
-        auto end = std::make_pair(tf, 1.0);
-        auto midpt = std::make_pair(tq, s);
-        auto midpause = std::make_pair(ti, s);
-        
-        if (direction=="forward") {
-            as.push_back({0,0});
-        } else {
-            as.push_back({0,1});
-        }
-
-        if (tp == 0 && tq == 0) {
-            as.push_back(end);
-        } else if (tp == 0) {
-            if (end .first== midpt.first && end.second == midpt.second) {
-                as.push_back(end);
-            } else {
-                as.push_back(midpt);
-                as.push_back(end);
-            }
-        } else {
-            if (end.first == midpause.first && end.second == midpause.second) {
-                as.push_back(midpt);
-                as.push_back(end);
-            } else {
-                as.push_back(midpt);
-                as.push_back(midpause);
-                as.push_back(end);
-            }
-        }
-
+        as = gen.generate(annealingSchedule);
     } else {
         as.push_back({0,0});
         as.push_back({std::stod(annealTime), s});
     }
     
-    std::stringstream ss;
-    ss << "[";
-    for (auto e : as) {
-        ss << "[" << e.first << "," << e.second << "],";
-    }
-    annealingStr = ss.str().substr(0,ss.str().length()-1)+"]";
+    annealingStr = gen.getAsString(as);
     xacc::info("Annealing Schedule: " + annealingStr);
 
 	if (xacc::optionExists("dwave-num-reads")) {

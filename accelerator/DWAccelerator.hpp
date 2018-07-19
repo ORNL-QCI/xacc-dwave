@@ -64,6 +64,62 @@ struct DWSolver {
 	std::vector<std::pair<int,int>> edges;
 };
 
+class AnnealScheduleGenerator {
+    public:
+    std::vector<std::pair<double,double>> generate(std::shared_ptr<Anneal> annealInst) {
+        std::vector<std::pair<double,double>> as;
+        double s = 1;
+
+        auto ta = boost::get<double>(annealInst->getParameter(0));
+        auto tp = boost::get<double>(annealInst->getParameter(1));
+        auto tq = boost::get<double>(annealInst->getParameter(2));
+        auto direction = boost::get<std::string>(annealInst->getParameter(3));
+        
+        auto ti = ta + tp;
+        auto tf = ta + tp + tq;
+        auto end = std::make_pair(tf, 1.0);
+        auto midpt = std::make_pair(tq, (s/tf)*tp);
+        auto midpause = std::make_pair(ti, (s/tf)*ti);
+        
+        if (direction=="forward") {
+            as.push_back({0,0});
+        } else {
+            as.push_back({0,1});
+        }
+
+        if (tp == 0 && tq == 0) {
+            as.push_back(end);
+        } else if (tp == 0) {
+            if (end .first== midpt.first && end.second == midpt.second) {
+                as.push_back(end);
+            } else {
+                as.push_back(midpt);
+                as.push_back(end);
+            }
+        } else {
+            if (end.first == midpause.first && end.second == midpause.second) {
+                as.push_back(midpt);
+                as.push_back(end);
+            } else {
+                as.push_back(midpt);
+                as.push_back(midpause);
+                as.push_back(end);
+            }
+        }
+
+        return as;
+    }
+
+    const std::string getAsString(std::vector<std::pair<double,double>>& as) {
+         std::stringstream ss;
+        ss << "[";
+        for (auto e : as) {
+           ss << "[" << e.first << "," << e.second << "],";
+        }
+        return ss.str().substr(0,ss.str().length()-1)+"]";
+    }
+};
+
 /**
  * The DWAccelerator is an XACC Accelerator that
  * takes D-Wave IR and executes the quantum machine

@@ -34,20 +34,17 @@
 
 using namespace xacc::quantum;
 
-TEST(DWAcceleratorTester, checkKernelExecution) {
+TEST(AnnealScheduleGeneratorTester, checkAnnealSched) {
 
-	// DWAccelerator acc;
-	// acc.initialize();
-	// auto buffer = acc.createBuffer("qubits");
-	// auto f = std::make_shared<DWKernel>("simple");
-	// f->addInstruction(std::make_shared<DWQMI>(0, 0, 20));
-	// f->addInstruction(std::make_shared<DWQMI>(1, 1, 50));
+    auto annealSched = std::make_shared<Anneal>(std::vector<InstructionParameter>{
+        InstructionParameter(10.), InstructionParameter(10.), InstructionParameter(10.), InstructionParameter("forward")});
+        
+    AnnealScheduleGenerator gen;
 
-
-
+    auto as = gen.generate(annealSched);
+	
+    std::cout << gen.getAsString(as) << "\n";
 }
-
-
 
 int main(int argc, char** argv) {
    xacc::Initialize(argc, argv);
