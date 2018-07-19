@@ -58,7 +58,7 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 	auto last = src.find_last_of("}");
 	kernelSource = src.substr (first,last-first);
 
-	xacc::info("Source:\n" + kernelSource);
+	// xacc::info("Source:\n" + kernelSource);
 
     // Get the function name
     std::vector<std::string> lines, fLineSpaces, fLineCommas;    
@@ -116,7 +116,6 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 	int maxBitIdx = listener.maxBitIdx; 
 	maxBitIdx++;
 
-    std::cout << "COMPILER MAX BIT IDX = " << maxBitIdx << "\n";
 	// Create a graph representation of the problem
 	auto problemGraph = std::make_shared<DWGraph>(maxBitIdx);
 	for (auto inst : dwKernel->getInstructions()) {
@@ -166,6 +165,7 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
 std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src) {
 	xacc::error("Cannot compile D-Wave program without "
 			"information about Accelerator connectivity.");
+            return std::make_shared<DWIR>();
 }
 
 }
