@@ -131,7 +131,7 @@ reverse
    ;
 
 ID 
-   : [a-z][A-Za-z0-9_]*
+   : [A-Za-z][A-Za-z0-9_]*
    ;
 
 /* Keep it real...numbers */

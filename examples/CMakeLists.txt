@@ -30,3 +30,5 @@
 #**********************************************************************************/
 add_executable(dwave-simple-example dwave-simple-example.cpp)
 target_link_libraries(dwave-simple-example ${XACC_LIBRARIES})
+add_executable(variable-example variable-example.cpp)
+target_link_libraries(variable-example ${XACC_LIBRARIES})

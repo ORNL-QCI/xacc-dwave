@@ -45,6 +45,7 @@ namespace quantum {
 
 DWQMIListener::DWQMIListener(const std::string& fname, std::vector<InstructionParameter> params) {
 	f = std::make_shared<DWKernel>(fname, params); 
+    for (auto& p : params) functionVarNames.push_back(boost::get<std::string>(p));
 }
 
 std::shared_ptr<Function> DWQMIListener::getKernel() {
@@ -73,6 +74,15 @@ void DWQMIListener::enterAnnealdecl(DWQMIParser::AnnealdeclContext * ctx) {
         auto tpparam = is_double(tpStr) ? InstructionParameter(std::stod(tpStr)) : InstructionParameter(tpStr);
         auto tqparam = is_double(tqStr) ? InstructionParameter(std::stod(tqStr)) : InstructionParameter(tqStr);
 
+        if(taparam.which() == 3 && !contains(functionVarNames, boost::get<std::string>(taparam)))
+            xacc::error(boost::get<std::string>(taparam) + " is an invalid kernel parameter (does not exist in kernel arg list)");
+ 
+        if(tpparam.which() == 3 && !contains(functionVarNames, boost::get<std::string>(tpparam)))
+            xacc::error(boost::get<std::string>(tpparam) + " is an invalid kernel parameter (does not exist in kernel arg list)");
+ 
+        if(tqparam.which() == 3 && !contains(functionVarNames, boost::get<std::string>(tqparam)))
+            xacc::error(boost::get<std::string>(tqparam) + " is an invalid kernel parameter (does not exist in kernel arg list)");
+            
         std::string direction = "forward";
         if (ctx->direction() != nullptr) {
             std::cout << ctx->direction()->getText() << "\n";
@@ -122,6 +132,10 @@ void DWQMIListener::enterInst(dwqmi::DWQMIParser::InstContext *ctx) {
     }
     auto param = is_double(valStr) ? InstructionParameter(std::stod(valStr)) : InstructionParameter(valStr);
     
+    if(param.which() == 3 && !contains(functionVarNames, boost::get<std::string>(param)))
+        xacc::error(boost::get<std::string>(param) + " is an invalid kernel parameter (does not exist in kernel arg list)");
+
+
 	auto instruction = std::make_shared<DWQMI>(std::stoi(ctx->INT(0)->getText()), 
                                                 std::stoi(ctx->INT(1)->getText()), 
                                                 param);

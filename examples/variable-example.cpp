@@ -1,5 +1,5 @@
 /***********************************************************************************
- * Copyright (c) 2018, UT-Battelle
+ * Copyright (c) 2016, UT-Battelle
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,49 +25,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Contributors:
- *   Initial implementation - Alex McCaskey
+ *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#ifndef XACC_IBM_DWQMILISTENER_H
-#define XACC_IBM_DWQMILISTENER_H
+#include "XACC.hpp"
 
-#include <DWQMIBaseListener.h>
-#include <IR.hpp>
+const std::string src = R"src(__qpu__ variable(AcceleratorBuffer ab, double ta, double tp, double tq, double h, double J) {
+    anneal ta tp tq;
+    0 0 h;
+    1 1 h;
+    0 1 J;
+})src";
+	
+int main (int argc, char** argv) {
 
-using namespace dwqmi;
+	// Initialize the XACC Framework
+	xacc::Initialize(argc, argv);
 
-namespace xacc {
-namespace quantum {
+	xacc::setOption("compiler","dwave-qmi");
 
-template<class C, class T>
-auto contains(const C& v, const T& x)
--> decltype(std::end(v), true)
-{
-    return std::end(v) != std::find(std::begin(v), std::end(v), x);
-}
-/**
- * 
- */
-class DWQMIListener : public DWQMIBaseListener {
-	protected:
-	        std::shared_ptr<Function> f;
-            bool foundAnneal = false;
-            std::vector<std::string> functionVarNames;
-	public:
-            int maxBitIdx = 0;
+	auto qpu = xacc::getAccelerator("dwave");
 
-            std::shared_ptr<Function> getKernel();
+	auto qubits = qpu->createBuffer("qbits");
 
-            DWQMIListener(const std::string& fname, std::vector<InstructionParameter> params);
+	// Create a Program
+	xacc::Program program(qpu, src);
+    program.build();
+	auto variable = program.getKernel<double, double, double, double, double>("variable");
 
-            virtual void enterInst(DWQMIParser::InstContext *ctx) override;
-            virtual void enterAnnealdecl(DWQMIParser::AnnealdeclContext * ctx) override;
+	// Execute!
+    for (auto& t : {20., 30.}) 
+	    variable(qubits, t, 0., 0., 2., 3.);
 
-        
-};
-    
+	// Finalize the XACC Framework
+	xacc::Finalize();
+
+	return 0;
 }
 
-}
 
-#endif
+
