@@ -35,10 +35,10 @@ set (LIBRARY_NAME xacc-dwave-qmicompiler)
 file (GLOB_RECURSE HEADERS *.hpp generated/*.hpp)
 file (GLOB SRC *.cpp generated/*.cpp)
 
-include_directories(runtime/src)
+#include_directories(runtime/src)
 include_directories(generated)
 
-add_subdirectory(runtime)
+#add_subdirectory(runtime)
 
 # Set up dependencies to resources to track changes
 usFunctionGetResourceSource(TARGET ${LIBRARY_NAME} OUT SRC)
@@ -65,7 +65,7 @@ usFunctionEmbedResources(TARGET ${LIBRARY_NAME}
   )
 
 #target_link_libraries(${LIBRARY_NAME} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${XACC_LIBRARIES})
-target_link_libraries(${LIBRARY_NAME} ${XACC_LIBRARIES} antlr4_static)
+target_link_libraries(${LIBRARY_NAME} ${XACC_LIBRARIES})
 if(APPLE)
    set_target_properties(${LIBRARY_NAME} PROPERTIES INSTALL_RPATH "@loader_path/../lib")
    set_target_properties(${LIBRARY_NAME} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
