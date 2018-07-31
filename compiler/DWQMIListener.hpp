@@ -70,6 +70,7 @@ class DWQMIListener : public DWQMIBaseListener {
 
         void enterXacckernel(DWQMIParser::XacckernelContext *ctx) override;
         void exitXacckernel(DWQMIParser::XacckernelContext *ctx) override;
+        void exitKernelcall(DWQMIParser::KernelcallContext *ctx) override;
 };
     
 }

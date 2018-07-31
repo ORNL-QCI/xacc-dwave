@@ -66,8 +66,9 @@ line
 
 /* A program statement */
 statement
-   : annealdecl? ';'
+   : annealdecl ';'
    | inst ';'
+   | kernelcall ';'
    ;
 
 /* A program comment */

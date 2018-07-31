@@ -114,6 +114,15 @@ namespace xacc {
             ir->addKernel(curFunc);
         };
 
+        void DWQMIListener::exitKernelcall(DWQMIParser::KernelcallContext *ctx) {
+            std::string gateName = ctx->kernelname->getText();
+            if (functions.count(gateName)) {
+                curFunc->addInstruction(functions[gateName]);
+            } else {
+                xacc::error("Tried calling an undefined kernel.");
+            }
+        }
+
         void DWQMIListener::enterAnnealdecl(DWQMIParser::AnnealdeclContext *ctx) {
             if (!foundAnneal) {
 
