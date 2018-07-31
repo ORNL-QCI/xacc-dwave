@@ -16,6 +16,18 @@ namespace dwqmi {
 class  DWQMIListener : public antlr4::tree::ParseTreeListener {
 public:
 
+  virtual void enterXaccsrc(DWQMIParser::XaccsrcContext *ctx) = 0;
+  virtual void exitXaccsrc(DWQMIParser::XaccsrcContext *ctx) = 0;
+
+  virtual void enterXacckernel(DWQMIParser::XacckernelContext *ctx) = 0;
+  virtual void exitXacckernel(DWQMIParser::XacckernelContext *ctx) = 0;
+
+  virtual void enterKernelcall(DWQMIParser::KernelcallContext *ctx) = 0;
+  virtual void exitKernelcall(DWQMIParser::KernelcallContext *ctx) = 0;
+
+  virtual void enterTypedparam(DWQMIParser::TypedparamContext *ctx) = 0;
+  virtual void exitTypedparam(DWQMIParser::TypedparamContext *ctx) = 0;
+
   virtual void enterMainprog(DWQMIParser::MainprogContext *ctx) = 0;
   virtual void exitMainprog(DWQMIParser::MainprogContext *ctx) = 0;
 

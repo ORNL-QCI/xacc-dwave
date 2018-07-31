@@ -13,15 +13,17 @@ namespace dwqmi {
 class  DWQMIParser : public antlr4::Parser {
 public:
   enum {
-    T__0 = 1, T__1 = 2, T__2 = 3, COMMENT = 4, ANNEAL = 5, ID = 6, REAL = 7, 
-    MINUS = 8, INT = 9, STRING = 10, EOL = 11, WS = 12
+    T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, T__5 = 6, T__6 = 7, 
+    T__7 = 8, T__8 = 9, T__9 = 10, TYPE = 11, COMMENT = 12, ANNEAL = 13, 
+    ID = 14, REAL = 15, MINUS = 16, INT = 17, STRING = 18, EOL = 19, WS = 20
   };
 
   enum {
-    RuleMainprog = 0, RuleProgram = 1, RuleLine = 2, RuleStatement = 3, 
-    RuleComment = 4, RuleInst = 5, RuleAnnealdecl = 6, RuleTa = 7, RuleTp = 8, 
-    RuleTq = 9, RuleAnneal = 10, RuleId = 11, RuleReal = 12, RuleString = 13, 
-    RuleDirection = 14, RuleForward = 15, RuleReverse = 16
+    RuleXaccsrc = 0, RuleXacckernel = 1, RuleKernelcall = 2, RuleTypedparam = 3, 
+    RuleMainprog = 4, RuleProgram = 5, RuleLine = 6, RuleStatement = 7, 
+    RuleComment = 8, RuleInst = 9, RuleAnnealdecl = 10, RuleTa = 11, RuleTp = 12, 
+    RuleTq = 13, RuleAnneal = 14, RuleId = 15, RuleReal = 16, RuleString = 17, 
+    RuleDirection = 18, RuleForward = 19, RuleReverse = 20
   };
 
   DWQMIParser(antlr4::TokenStream *input);
@@ -34,6 +36,10 @@ public:
   virtual antlr4::dfa::Vocabulary& getVocabulary() const override;
 
 
+  class XaccsrcContext;
+  class XacckernelContext;
+  class KernelcallContext;
+  class TypedparamContext;
   class MainprogContext;
   class ProgramContext;
   class LineContext;
@@ -51,6 +57,68 @@ public:
   class DirectionContext;
   class ForwardContext;
   class ReverseContext; 
+
+  class  XaccsrcContext : public antlr4::ParserRuleContext {
+  public:
+    XaccsrcContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<XacckernelContext *> xacckernel();
+    XacckernelContext* xacckernel(size_t i);
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  XaccsrcContext* xaccsrc();
+
+  class  XacckernelContext : public antlr4::ParserRuleContext {
+  public:
+    DWQMIParser::IdContext *kernelname = nullptr;;
+    DWQMIParser::IdContext *acceleratorbuffer = nullptr;;
+    XacckernelContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    MainprogContext *mainprog();
+    std::vector<IdContext *> id();
+    IdContext* id(size_t i);
+    std::vector<TypedparamContext *> typedparam();
+    TypedparamContext* typedparam(size_t i);
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  XacckernelContext* xacckernel();
+
+  class  KernelcallContext : public antlr4::ParserRuleContext {
+  public:
+    DWQMIParser::IdContext *kernelname = nullptr;;
+    KernelcallContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<IdContext *> id();
+    IdContext* id(size_t i);
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  KernelcallContext* kernelcall();
+
+  class  TypedparamContext : public antlr4::ParserRuleContext {
+  public:
+    TypedparamContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *TYPE();
+    IdContext *id();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  TypedparamContext* typedparam();
 
   class  MainprogContext : public antlr4::ParserRuleContext {
   public:

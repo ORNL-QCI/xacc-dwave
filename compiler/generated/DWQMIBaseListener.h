@@ -18,6 +18,18 @@ namespace dwqmi {
 class  DWQMIBaseListener : public DWQMIListener {
 public:
 
+  virtual void enterXaccsrc(DWQMIParser::XaccsrcContext * /*ctx*/) override { }
+  virtual void exitXaccsrc(DWQMIParser::XaccsrcContext * /*ctx*/) override { }
+
+  virtual void enterXacckernel(DWQMIParser::XacckernelContext * /*ctx*/) override { }
+  virtual void exitXacckernel(DWQMIParser::XacckernelContext * /*ctx*/) override { }
+
+  virtual void enterKernelcall(DWQMIParser::KernelcallContext * /*ctx*/) override { }
+  virtual void exitKernelcall(DWQMIParser::KernelcallContext * /*ctx*/) override { }
+
+  virtual void enterTypedparam(DWQMIParser::TypedparamContext * /*ctx*/) override { }
+  virtual void exitTypedparam(DWQMIParser::TypedparamContext * /*ctx*/) override { }
+
   virtual void enterMainprog(DWQMIParser::MainprogContext * /*ctx*/) override { }
   virtual void exitMainprog(DWQMIParser::MainprogContext * /*ctx*/) override { }
 
