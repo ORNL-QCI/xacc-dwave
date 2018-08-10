@@ -33,6 +33,21 @@
 
 grammar DWQMI;
 
+
+/* This part of the grammar is particular to XACC */
+/*************************************************************************************/
+xaccsrc         : xacckernel* ;
+
+xacckernel      : '__qpu__' kernelname=id '(' 'AcceleratorBuffer' acceleratorbuffer=id (',' typedparam)* ')' '{' mainprog '}' ;
+
+kernelcall      : kernelname=id '(' id? (',' id)* ')' ;
+
+typedparam      : TYPE id ;
+
+TYPE            : 'int' | 'double' | 'float' ;
+/*************************************************************************************/
+
+
 /* The main program */
 mainprog
    : program
@@ -51,8 +66,9 @@ line
 
 /* A program statement */
 statement
-   : annealdecl? ';'
+   : annealdecl ';'
    | inst ';'
+   | kernelcall ';'
    ;
 
 /* A program comment */

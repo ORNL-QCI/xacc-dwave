@@ -31,8 +31,11 @@
 #ifndef XACC_IBM_DWQMILISTENER_H
 #define XACC_IBM_DWQMILISTENER_H
 
-#include <DWQMIBaseListener.h>
-#include <IR.hpp>
+#include "Accelerator.hpp"
+#include "IR.hpp"
+#include "AQCAcceleratorBuffer.hpp"
+#include "DWQMIBaseListener.h"
+#include "DWKernel.hpp"
 
 using namespace dwqmi;
 
@@ -50,20 +53,24 @@ auto contains(const C& v, const T& x)
  */
 class DWQMIListener : public DWQMIBaseListener {
 	protected:
-	        std::shared_ptr<Function> f;
-            bool foundAnneal = false;
-            std::vector<std::string> functionVarNames;
-	public:
-            int maxBitIdx = 0;
+        bool foundAnneal = false;
+        std::vector<std::string> functionVarNames;
+        std::shared_ptr<IR> ir;
+        std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph;
+        std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer;
+        std::map<std::string, std::shared_ptr<DWKernel>> functions;
+        std::shared_ptr<DWKernel> curFunc;
+    public:
+        int maxBitIdx = 0;
 
-            std::shared_ptr<Function> getKernel();
+        DWQMIListener(std::shared_ptr<xacc::IR> ir, std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph, std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer);
 
-            DWQMIListener(const std::string& fname, std::vector<InstructionParameter> params);
+        void enterInst(DWQMIParser::InstContext *ctx) override;
+        void enterAnnealdecl(DWQMIParser::AnnealdeclContext * ctx) override;
 
-            virtual void enterInst(DWQMIParser::InstContext *ctx) override;
-            virtual void enterAnnealdecl(DWQMIParser::AnnealdeclContext * ctx) override;
-
-        
+        void enterXacckernel(DWQMIParser::XacckernelContext *ctx) override;
+        void exitXacckernel(DWQMIParser::XacckernelContext *ctx) override;
+        void exitKernelcall(DWQMIParser::KernelcallContext *ctx) override;
 };
     
 }

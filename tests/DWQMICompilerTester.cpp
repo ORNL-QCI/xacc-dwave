@@ -172,7 +172,7 @@ TEST(DWQMICompilerTester, checkFactoring15OneToOneMapping) {
 	auto compiler = std::make_shared<DWQMICompiler>();
 
 	const std::string factoring15QMI =
-			"__qpu__ factor15() {\n"
+			"__qpu__ factor15(AcceleratorBuffer ab) {\n"
 			"0 0 20.0;\n"
 			"1 1 50.0;\n"
 			"2 2 60.0;\n"
