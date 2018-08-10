@@ -34,6 +34,7 @@
 #include "AQCAcceleratorBuffer.hpp"
 #include "DefaultParameterSetter.hpp"
 
+using namespace xacc;
 using namespace xacc::quantum;
 
 class FakeDWAcc : public xacc::Accelerator {
@@ -169,7 +170,7 @@ public:
 
 TEST(DWQMICompilerTester, checkFactoring15OneToOneMapping) {
 
-	auto compiler = std::make_shared<DWQMICompiler>();
+	auto compiler = xacc::getService<Compiler>("dwave-qmi");
 
 	const std::string factoring15QMI =
 			"__qpu__ factor15(AcceleratorBuffer ab) {\n"
@@ -189,12 +190,7 @@ TEST(DWQMICompilerTester, checkFactoring15OneToOneMapping) {
 			"2 6 -128.0;\n"
 			"}";
 
-	auto options = xacc::RuntimeOptions::instance();
-	if (options->exists("dwave-embedding")) {
-		(*options)["dwave-embedding"] = "trivial";
-	} else {
-		options->insert(std::make_pair("dwave-embedding", "trivial"));
-	}
+    xacc::setOption("dwave-embedding", "trivial");
 
 	auto acc = std::make_shared<FakeDWAcc>();
 
@@ -224,7 +220,7 @@ TEST(DWQMICompilerTester, checkFactoring15OneToOneMapping) {
 }
 
 TEST(DWQMICompilerTester,checkVariableWeight) {
-	auto compiler = std::make_shared<DWQMICompiler>();
+	auto compiler = xacc::getService<Compiler>("dwave-qmi");
 
 	const std::string testsrc = R"testsrc(__qpu__ f(AcceleratorBuffer b, double h0) {
         0 0 h0;
@@ -262,7 +258,7 @@ TEST(DWQMICompilerTester,checkVariableWeight) {
 }
 TEST(DWQMICompilerTester, checkMultipleVariableWeights) {
 
-    auto compiler = std::make_shared<DWQMICompiler>();
+	auto compiler = xacc::getService<Compiler>("dwave-qmi");
 
     const std::string testsrc2 = R"testsrc(__qpu__ f(AcceleratorBuffer b, double h0, double h1) {
         0 0 h0;
@@ -298,7 +294,7 @@ TEST(DWQMICompilerTester, checkMultipleVariableWeights) {
 
 TEST(DWQMICompilerTester, checkAnneal) {
 
-    auto compiler = std::make_shared<DWQMICompiler>();
+	auto compiler = xacc::getService<Compiler>("dwave-qmi");
 
     const std::string testsrc = R"testsrc(__qpu__ f(AcceleratorBuffer b, double h0, double h1) {
         anneal 10 10 10;
@@ -319,7 +315,7 @@ TEST(DWQMICompilerTester, checkAnneal) {
 
 TEST(DWQMICompilerTester, checkVariableAnneal) {
 
-    auto compiler = std::make_shared<DWQMICompiler>();
+	auto compiler = xacc::getService<Compiler>("dwave-qmi");
 
     const std::string testsrc = R"testsrc(__qpu__ f(AcceleratorBuffer b, double h0, double h1, double ts, double tp, double tq) {
         anneal ts tp tq;
