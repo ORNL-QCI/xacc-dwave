@@ -1,4 +1,4 @@
-[![Build Status](http://ci.eclipse.org/xacc/buildStatus/icon?job=xacc-dwave-ci)](http://ci.eclipse.org/xacc/job/xacc-dwave-ci/)
+[![Build Status](https://travis-ci.org/ORNL-QCI/xacc-dwave.svg?branch=master)](https://travis-ci.org/ORNL-QCI/xacc-dwave)
 
 # XACC Plugins for working with D-Wave Quantum Annealer
 These plugins for XACC provide a Compiler implementation for D-Wave QMI and an Accelerator implementation targeting the remote D-Wave QPU infrastructure
