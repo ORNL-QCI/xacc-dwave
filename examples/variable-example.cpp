@@ -13,9 +13,9 @@
  *     names of its contributors may be used to endorse or promote products
  *     derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -30,38 +30,37 @@
  **********************************************************************************/
 #include "XACC.hpp"
 
-const std::string src = R"src(__qpu__ variable(AcceleratorBuffer ab, double ta, double tp, double tq, double h, double J) {
+const std::string src =
+    R"src(__qpu__ variable(AcceleratorBuffer ab, double ta, double tp, double tq, double h, double J) {
     anneal ta tp tq;
     0 0 h;
     1 1 h;
     0 1 J;
 })src";
-	
-int main (int argc, char** argv) {
 
-	// Initialize the XACC Framework
-	xacc::Initialize(argc, argv);
+int main(int argc, char **argv) {
 
-	xacc::setOption("compiler","dwave-qmi");
+  // Initialize the XACC Framework
+  xacc::Initialize(argc, argv);
 
-	auto qpu = xacc::getAccelerator("dwave");
+  xacc::setOption("compiler", "dwave-qmi");
 
-	auto qubits = qpu->createBuffer("qbits");
+  auto qpu = xacc::getAccelerator("dwave");
 
-	// Create a Program
-	xacc::Program program(qpu, src);
-    program.build();
-	auto variable = program.getKernel<double, double, double, double, double>("variable");
+  auto qubits = qpu->createBuffer("qbits");
 
-	// Execute!
-    for (auto& t : {20., 30.}) 
-	    variable(qubits, t, 0., 0., 2., 3.);
+  // Create a Program
+  xacc::Program program(qpu, src);
+  program.build();
+  auto variable =
+      program.getKernel<double, double, double, double, double>("variable");
 
-	// Finalize the XACC Framework
-	xacc::Finalize();
+  // Execute!
+  for (auto &t : {20., 30.})
+    variable(qubits, t, 0., 0., 2., 3.);
 
-	return 0;
+  // Finalize the XACC Framework
+  xacc::Finalize();
+
+  return 0;
 }
-
-
-

@@ -13,9 +13,9 @@
  *     names of its contributors may be used to endorse or promote products
  *     derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -30,48 +30,44 @@
  **********************************************************************************/
 #include "XACC.hpp"
 
-const std::string src =
-	"__qpu__ factoring15() {\n"
-		"   0 0 20\n"
-		"   1 1 50\n"
-		"   2 2 60\n"
-		"   4 4 50\n"
-		"   5 5 60\n"
-		"   6 6 -160\n"
-		"   1 4 -1000\n"
-		"   2 5 -1000\n"
-		"   0 4 -14\n"
-		"   0 5 -12\n"
-		"   0 6 32\n"
-		"   1 5 68\n"
-		"   1 6 -128\n"
-		"   2 6 -128\n"
-	"}";
+const std::string src = "__qpu__ factoring15() {\n"
+                        "   0 0 20\n"
+                        "   1 1 50\n"
+                        "   2 2 60\n"
+                        "   4 4 50\n"
+                        "   5 5 60\n"
+                        "   6 6 -160\n"
+                        "   1 4 -1000\n"
+                        "   2 5 -1000\n"
+                        "   0 4 -14\n"
+                        "   0 5 -12\n"
+                        "   0 6 32\n"
+                        "   1 5 68\n"
+                        "   1 6 -128\n"
+                        "   2 6 -128\n"
+                        "}";
 
-int main (int argc, char** argv) {
+int main(int argc, char **argv) {
 
-	// Initialize the XACC Framework
-	xacc::Initialize(argc, argv);
+  // Initialize the XACC Framework
+  xacc::Initialize(argc, argv);
 
-	xacc::setOption("compiler","dwave-qmi");
+  xacc::setOption("compiler", "dwave-qmi");
 
-	auto qpu = xacc::getAccelerator("dwave");
+  auto qpu = xacc::getAccelerator("dwave");
 
-	auto qubits = qpu->createBuffer("qbits");
+  auto qubits = qpu->createBuffer("qbits");
 
-	// Create a Program
-	xacc::Program program(qpu, src);
+  // Create a Program
+  xacc::Program program(qpu, src);
 
-	auto factoring15 = program.getKernel("factoring15");
+  auto factoring15 = program.getKernel("factoring15");
 
-	// Execute!
-	factoring15(qubits);
+  // Execute!
+  factoring15(qubits);
 
-	// Finalize the XACC Framework
-	xacc::Finalize();
+  // Finalize the XACC Framework
+  xacc::Finalize();
 
-	return 0;
+  return 0;
 }
-
-
-

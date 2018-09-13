@@ -13,9 +13,9 @@
  *     names of its contributors may be used to endorse or promote products
  *     derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -28,13 +28,13 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#include <boost/algorithm/string.hpp>
-#include "AQCAcceleratorBuffer.hpp"
 #include "DWQMICompiler.hpp"
+#include "AQCAcceleratorBuffer.hpp"
 #include "RuntimeOptions.hpp"
+#include <boost/algorithm/string.hpp>
 
-#include "DWQMIListener.hpp"
 #include "DWQMILexer.h"
+#include "DWQMIListener.hpp"
 
 using namespace antlr4;
 using namespace dwqmi;
@@ -43,42 +43,73 @@ namespace xacc {
 
 namespace quantum {
 
-std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src,
-		std::shared_ptr<Accelerator> acc) {
+std::shared_ptr<IR> DWQMICompiler::compile(const std::string &src,
+                                           std::shared_ptr<Accelerator> acc) {
 
-	auto hardwareGraph = acc->getAcceleratorConnectivity();
+  auto hardwareGraph = acc->getAcceleratorConnectivity();
 
-    ANTLRInputStream input(src);
-    DWQMILexer lexer(&input);
-    CommonTokenStream tokens(&lexer);
-    DWQMIParser parser(&tokens);
-    parser.removeErrorListeners();
-    parser.addErrorListener(new DWQMIErrorListener());
+  ANTLRInputStream input(src);
+  DWQMILexer lexer(&input);
+  CommonTokenStream tokens(&lexer);
+  DWQMIParser parser(&tokens);
+  parser.removeErrorListeners();
+  parser.addErrorListener(new DWQMIErrorListener());
 
-	auto ir(std::make_shared<DWIR>());
+  auto ir(std::make_shared<DWIR>());
 
-    // Here we assume, there is just one allocation
-    // of qubits for the D-Wave -- all of them.
-    auto bufName = acc->getAllocatedBufferNames()[0];
-    auto buffer = acc->getBuffer(bufName);
-    std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
-    if (!aqcBuffer) {
-        xacc::error("Invalid AcceleratorBuffer passed to DW QMI Compiler. Must be an AQCAcceleratorBuffer.");
-    }
+  // Here we assume, there is just one allocation
+  // of qubits for the D-Wave -- all of them.
+  auto bufName = acc->getAllocatedBufferNames()[0];
+  auto buffer = acc->getBuffer(bufName);
+  std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer =
+      std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
+  if (!aqcBuffer) {
+    xacc::error("Invalid AcceleratorBuffer passed to DW QMI Compiler. Must be "
+                "an AQCAcceleratorBuffer.");
+  }
 
-    tree::ParseTree *tree = parser.xaccsrc();
-    DWQMIListener listener(ir, hardwareGraph, aqcBuffer);
-    tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
+  tree::ParseTree *tree = parser.xaccsrc();
+  DWQMIListener listener(ir, hardwareGraph, aqcBuffer);
+  tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
 
-	return ir;
+  return ir;
 }
 
-std::shared_ptr<IR> DWQMICompiler::compile(const std::string& src) {
-	xacc::error("Cannot compile D-Wave program without "
-			"information about Accelerator connectivity.");
-            return std::make_shared<DWIR>();
+std::shared_ptr<IR> DWQMICompiler::compile(const std::string &src) {
+  xacc::error("Cannot compile D-Wave program without "
+              "information about Accelerator connectivity.");
+  return std::make_shared<DWIR>();
 }
 
+const std::string DWQMICompiler::translate(const std::string &bufferVariable,
+                                           std::shared_ptr<Function> function) {
+
+  if (!std::dynamic_pointer_cast<DWKernel>(function)) {
+    xacc::error("Cannot translate non-DW Kernels to DW-QMI.");
+  }
+
+  xacc::info("Translating provided IR Function to dwave-qmi.");
+
+  std::string src = "__qpu__ " + function->name() + "(AcceleratorBuffer b";
+
+  for (auto p : function->getParameters())
+    src += ", double " + boost::lexical_cast<std::string>(p);
+
+  src += ") {\n";
+
+  for (int i = 0; i < function->nInstructions(); ++i) {
+    auto inst = function->getInstruction(i);
+    auto bits = inst->bits();
+    auto param = inst->getParameter(0);
+    std::stringstream s;
+    s << "   " << bits[0] << " " << bits[1] << " "
+      << boost::lexical_cast<std::string>(param) << ";\n";
+    src += s.str();
+  }
+  src += "}";
+  return src;
 }
 
-}
+} // namespace quantum
+
+} // namespace xacc

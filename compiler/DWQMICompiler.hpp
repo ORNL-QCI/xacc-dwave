@@ -13,9 +13,9 @@
  *     names of its contributors may be used to endorse or promote products
  *     derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -30,10 +30,10 @@
  **********************************************************************************/
 #ifndef QUANTUM_AQC_COMPILERS_DWQMICOMPILER_HPP_
 #define QUANTUM_AQC_COMPILERS_DWQMICOMPILER_HPP_
-#include "XACC.hpp"
-#include "DWIR.hpp"
 #include "DWGraph.hpp"
+#include "DWIR.hpp"
 #include "EmbeddingAlgorithm.hpp"
+#include "XACC.hpp"
 #include "antlr4-runtime.h"
 
 namespace xacc {
@@ -41,15 +41,18 @@ namespace xacc {
 namespace quantum {
 
 class DWQMIErrorListener : public antlr4::BaseErrorListener {
-    public:
-    void syntaxError(antlr4::Recognizer *recognizer, antlr4::Token * offendingSymbol, size_t line, size_t charPositionInLine, const std::string &msg, std::exception_ptr e) override {
-        std::ostringstream output;
-        output << "Invalid DQWMI source: ";
-        output << "line " << line << ":" << charPositionInLine << " " << msg;
-        xacc::error(output.str());
-    }
+public:
+  void syntaxError(antlr4::Recognizer *recognizer,
+                   antlr4::Token *offendingSymbol, size_t line,
+                   size_t charPositionInLine, const std::string &msg,
+                   std::exception_ptr e) override {
+    std::ostringstream output;
+    output << "Invalid DQWMI source: ";
+    output << "line " << line << ":" << charPositionInLine << " " << msg;
+    xacc::error(output.str());
+  }
 };
-        
+
 /**
  * The DWQMICompiler is an XACC Compiler that compiles
  * D-Wave quantum machine instructions to produce an
@@ -60,101 +63,91 @@ class DWQMIErrorListener : public antlr4::BaseErrorListener {
  * input source kernel code to output the embedded Ising
  * graph for D-Wave execution.
  */
-class DWQMICompiler: public xacc::Compiler {
+class DWQMICompiler : public xacc::Compiler {
 
 public:
+  /**
+   * The Compiler.
+   */
+  DWQMICompiler() {}
 
-	/**
-	 * The Compiler.
-	 */
-	DWQMICompiler() {}
+  /**
+   * Compile the given kernel code for the
+   * given D-Wave Accelerator.
+   *
+   * @param src The QMI source code
+   * @param acc Reference to the D-Wave Accelerator
+   * @return
+   */
+  virtual std::shared_ptr<xacc::IR> compile(const std::string &src,
+                                            std::shared_ptr<Accelerator> acc);
 
-	/**
-	 * Compile the given kernel code for the
-	 * given D-Wave Accelerator.
-	 *
-	 * @param src The QMI source code
-	 * @param acc Reference to the D-Wave Accelerator
-	 * @return
-	 */
-	virtual std::shared_ptr<xacc::IR> compile(const std::string& src,
-			std::shared_ptr<Accelerator> acc);
+  /**
+   * This method is not implemented - we must always have
+   * D-Wave Accelerator connectivity information for compilation.
+   *
+   * @return
+   */
+  virtual std::shared_ptr<xacc::IR> compile(const std::string &src);
 
-	/**
-	 * This method is not implemented - we must always have
-	 * D-Wave Accelerator connectivity information for compilation.
-	 *
-	 * @return
-	 */
-	virtual std::shared_ptr<xacc::IR> compile(const std::string& src);
+  /**
+   * Return the name of this Compiler
+   * @return name Compiler name
+   */
+  virtual const std::string getName() { return "dwave-qmi"; }
 
-	/**
-	 * Return the name of this Compiler
-	 * @return name Compiler name
-	 */
-	virtual const std::string getName() {
-		return "dwave-qmi";
-	}
+  /**
+   * Return the command line options for this compiler
+   *
+   * @return options Description of command line options.
+   */
+  virtual std::shared_ptr<options_description> getOptions() {
+    auto desc =
+        std::make_shared<options_description>("D-Wave QMI Compiler Options");
+    desc->add_options()("dwave-embedding", value<std::string>(),
+                        "Provide the name of the Embedding Algorithm to use "
+                        "during compilation.")(
+        "dwave-parameter-setter", value<std::string>(),
+        "Provide the name of the "
+        "ParameterSetter to map logical parameters to physical parameters.")(
+        "dwave-load-embedding", value<std::string>(),
+        "Use the embedding in the given file.")(
+        "dwave-persist-embedding", value<std::string>(),
+        "Persist the computed embedding to the given file name.")(
+        "dwave-list-embedding-algorithms",
+        "List all available embedding algorithms.");
+    return desc;
+  }
 
-	/**
-	 * Return the command line options for this compiler
-	 *
-	 * @return options Description of command line options.
-	 */
-	virtual std::shared_ptr<options_description> getOptions() {
-		auto desc = std::make_shared<options_description>(
-				"D-Wave QMI Compiler Options");
-		desc->add_options()("dwave-embedding", value<std::string>(),
-				"Provide the name of the Embedding Algorithm to use during compilation.")(
-				"dwave-parameter-setter", value<std::string>(),
-				"Provide the name of the "
-						"ParameterSetter to map logical parameters to physical parameters.")
-						("dwave-load-embedding", value<std::string>(), "Use the embedding in the given file.")
-						("dwave-persist-embedding", value<std::string>(), "Persist the computed embedding to the given file name.")
-						("dwave-list-embedding-algorithms", "List all available embedding algorithms.");
-		return desc;
-	}
+  virtual bool handleOptions(variables_map &map) {
+    if (map.count("dwave-list-embedding-algorithms")) {
+      auto ids = xacc::getRegisteredIds<EmbeddingAlgorithm>();
+      for (auto i : ids) {
+        xacc::info("Registered Embedding Algorithm: " + i);
+      }
+      return true;
+    }
+    return false;
+  }
 
-	virtual bool handleOptions(variables_map& map) {
-		if (map.count("dwave-list-embedding-algorithms")) {
-			auto ids = xacc::getRegisteredIds<EmbeddingAlgorithm>();
-			for (auto i : ids) {
-				xacc::info("Registered Embedding Algorithm: " + i);
-			}
-			return true;
-		}
-		return false;
-	}
+  const std::string translate(const std::string &bufferVariable,
+                              std::shared_ptr<Function> function) override;
 
-	/**
-	 * We don't allow translations for the DW Compiler.
-	 * @param bufferVariable
-	 * @param function
-	 * @return
-	 */
-	virtual const std::string translate(const std::string& bufferVariable,
-			std::shared_ptr<Function> function) {
-		xacc::error("DWQMICompiler::translate - Method not implemented");
-	};
+  const std::string name() const override { return "dwave-qmi"; }
 
-	virtual const std::string name() const {
-		return "dwave-qmi";
-	}
+  const std::string description() const override {
+    return "The D-Wave QMI Compiler takes quantum machine instructions "
+           "and performs minor graph embedding and parameter setting.";
+  }
 
-	virtual const std::string description() const {
-		return "The D-Wave QMI Compiler takes quantum machine instructions "
-				"and performs minor graph embedding and parameter setting.";
-	}
-
-	/**
-	 * The destructor
-	 */
-	virtual ~DWQMICompiler() {}
-
+  /**
+   * The destructor
+   */
+  virtual ~DWQMICompiler() {}
 };
 
-}
+} // namespace quantum
 
-}
+} // namespace xacc
 
 #endif

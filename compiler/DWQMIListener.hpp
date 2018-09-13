@@ -13,9 +13,9 @@
  *     names of its contributors may be used to endorse or promote products
  *     derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
  * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -31,50 +31,51 @@
 #ifndef XACC_IBM_DWQMILISTENER_H
 #define XACC_IBM_DWQMILISTENER_H
 
-#include "Accelerator.hpp"
-#include "IR.hpp"
 #include "AQCAcceleratorBuffer.hpp"
-#include "DWQMIBaseListener.h"
+#include "Accelerator.hpp"
 #include "DWKernel.hpp"
+#include "DWQMIBaseListener.h"
+#include "IR.hpp"
 
 using namespace dwqmi;
 
 namespace xacc {
 namespace quantum {
 
-template<class C, class T>
-auto contains(const C& v, const T& x)
--> decltype(std::end(v), true)
-{
-    return std::end(v) != std::find(std::begin(v), std::end(v), x);
+template <class C, class T>
+auto contains(const C &v, const T &x) -> decltype(std::end(v), true) {
+  return std::end(v) != std::find(std::begin(v), std::end(v), x);
 }
 /**
- * 
+ *
  */
 class DWQMIListener : public DWQMIBaseListener {
-	protected:
-        bool foundAnneal = false;
-        std::vector<std::string> functionVarNames;
-        std::shared_ptr<IR> ir;
-        std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph;
-        std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer;
-        std::map<std::string, std::shared_ptr<DWKernel>> functions;
-        std::shared_ptr<DWKernel> curFunc;
-    public:
-        int maxBitIdx = 0;
+protected:
+  bool foundAnneal = false;
+  std::vector<std::string> functionVarNames;
+  std::shared_ptr<IR> ir;
+  std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph;
+  std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer;
+  std::map<std::string, std::shared_ptr<DWKernel>> functions;
+  std::shared_ptr<DWKernel> curFunc;
 
-        DWQMIListener(std::shared_ptr<xacc::IR> ir, std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph, std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer);
+public:
+  int maxBitIdx = 0;
 
-        void enterInst(DWQMIParser::InstContext *ctx) override;
-        void enterAnnealdecl(DWQMIParser::AnnealdeclContext * ctx) override;
+  DWQMIListener(std::shared_ptr<xacc::IR> ir,
+                std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph,
+                std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer);
 
-        void enterXacckernel(DWQMIParser::XacckernelContext *ctx) override;
-        void exitXacckernel(DWQMIParser::XacckernelContext *ctx) override;
-        void exitKernelcall(DWQMIParser::KernelcallContext *ctx) override;
+  void enterInst(DWQMIParser::InstContext *ctx) override;
+  void enterAnnealdecl(DWQMIParser::AnnealdeclContext *ctx) override;
+
+  void enterXacckernel(DWQMIParser::XacckernelContext *ctx) override;
+  void exitXacckernel(DWQMIParser::XacckernelContext *ctx) override;
+  void exitKernelcall(DWQMIParser::KernelcallContext *ctx) override;
 };
-    
-}
 
-}
+} // namespace quantum
+
+} // namespace xacc
 
 #endif
