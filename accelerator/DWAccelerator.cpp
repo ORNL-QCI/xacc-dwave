@@ -225,13 +225,19 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
     trials = xacc::getOption("dwave-num-reads");
   }
 
+  auto program = newKernel->toString("");
+  boost::replace_all(program, ";", "");
   jsonStr += "[{ \"solver\" : \"" + solverName + "\", \"type\" : \"" +
              solveType + "\", \"data\" : \"" + std::to_string(solver.nQubits) +
              " " + std::to_string(nQMILines - 1) + "\\n" +
-             newKernel->toString("") +
-             "\", \"params\": { \"num_reads\" : " + trials +
-             ", \"anneal_schedule\" : " + annealingStr +
-             +", \"auto_scale\" : true } }]";
+             program +
+             "\", \"params\": { \"num_reads\" : " + trials;
+    if (!boost::contains(solverName, "c4-sw")) {
+        jsonStr +=
+             ", \"anneal_schedule\" : " + annealingStr;
+    }
+    jsonStr += ", \"auto_scale\" : true } }]";
+    
   boost::replace_all(jsonStr, "\n", "\\n");
 
   return jsonStr;

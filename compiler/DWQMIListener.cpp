@@ -210,10 +210,12 @@ void DWQMIListener::enterInst(dwqmi::DWQMIParser::InstContext *ctx) {
     maxBitIdx = bit2;
 
   std::string valStr;
-  if (ctx->real() == nullptr) {
-    valStr = ctx->id()->getText();
-  } else {
+  if (ctx->real() != nullptr) {
     valStr = ctx->real()->getText();
+  } else if (ctx->INT(2) != nullptr) {
+    valStr = ctx->INT(2)->getText();
+  } else {
+    valStr = ctx->id()->getText();
   }
   auto param = is_double(valStr) ? InstructionParameter(std::stod(valStr))
                                  : InstructionParameter(valStr);

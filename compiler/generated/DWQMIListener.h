@@ -3,17 +3,19 @@
 
 #pragma once
 
-#include "DWQMIParser.h"
+
 #include "antlr4-runtime.h"
+#include "DWQMIParser.h"
+
 
 namespace dwqmi {
 
 /**
- * This interface defines an abstract listener for a parse tree produced by
- * DWQMIParser.
+ * This interface defines an abstract listener for a parse tree produced by DWQMIParser.
  */
-class DWQMIListener : public antlr4::tree::ParseTreeListener {
+class  DWQMIListener : public antlr4::tree::ParseTreeListener {
 public:
+
   virtual void enterXaccsrc(DWQMIParser::XaccsrcContext *ctx) = 0;
   virtual void exitXaccsrc(DWQMIParser::XaccsrcContext *ctx) = 0;
 
@@ -76,6 +78,8 @@ public:
 
   virtual void enterReverse(DWQMIParser::ReverseContext *ctx) = 0;
   virtual void exitReverse(DWQMIParser::ReverseContext *ctx) = 0;
+
+
 };
 
-} // namespace dwqmi
+}  // namespace dwqmi

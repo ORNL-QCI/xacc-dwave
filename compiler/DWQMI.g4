@@ -77,7 +77,7 @@ comment
    ;
 
 inst 
-   : INT INT (id | real)
+   : INT INT (id | real | INT)
    ;
    
 annealdecl
@@ -152,7 +152,7 @@ ID
 
 /* Keep it real...numbers */
 REAL
-   : (MINUS)? INT ( '.' (INT)? )
+   : (MINUS)? [0-9]* '.' [0-9]+
    ;
 MINUS
    : '-'
@@ -160,7 +160,7 @@ MINUS
 
 /* Non-negative integers */
 INT
-   : ('0'..'9')+ 
+   : (MINUS)? ('0'..'9')+ 
    ;
 
 /* Strings include numbers and slashes */
