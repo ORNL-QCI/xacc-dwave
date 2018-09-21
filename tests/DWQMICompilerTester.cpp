@@ -175,6 +175,7 @@ TEST(DWQMICompilerTester, checkFactoring15OneToOneMapping) {
 
   auto qmi = ir->getKernel("factor15")->toString("");
 
+  std::cout << "NPARAMS: " << ir->getKernel("factor15")->nParameters() << "\n";
   const std::string expected = R"expected(0 0 20;
 1 1 50;
 2 2 60;

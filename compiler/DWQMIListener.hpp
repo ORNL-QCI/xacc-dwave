@@ -31,7 +31,6 @@
 #ifndef XACC_IBM_DWQMILISTENER_H
 #define XACC_IBM_DWQMILISTENER_H
 
-#include "AQCAcceleratorBuffer.hpp"
 #include "Accelerator.hpp"
 #include "DWKernel.hpp"
 #include "DWQMIBaseListener.h"
@@ -55,7 +54,7 @@ protected:
   std::vector<std::string> functionVarNames;
   std::shared_ptr<IR> ir;
   std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph;
-  std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer;
+  std::shared_ptr<AcceleratorBuffer> buffer;
   std::map<std::string, std::shared_ptr<DWKernel>> functions;
   std::shared_ptr<DWKernel> curFunc;
 
@@ -64,7 +63,7 @@ public:
 
   DWQMIListener(std::shared_ptr<xacc::IR> ir,
                 std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph,
-                std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer);
+                std::shared_ptr<AcceleratorBuffer> aqcBuffer);
 
   void enterInst(DWQMIParser::InstContext *ctx) override;
   void enterAnnealdecl(DWQMIParser::AnnealdeclContext *ctx) override;

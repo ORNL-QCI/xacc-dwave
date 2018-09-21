@@ -31,7 +31,7 @@
 #ifndef QUANTUM_GATE_ACCELERATORS_DWACCELERATOR_HPP_
 #define QUANTUM_GATE_ACCELERATORS_DWACCELERATOR_HPP_
 
-#include "AQCAcceleratorBuffer.hpp"
+#include "AcceleratorBuffer.hpp"
 #include "DWKernel.hpp"
 #include "DWQMI.hpp"
 #include "RemoteAccelerator.hpp"

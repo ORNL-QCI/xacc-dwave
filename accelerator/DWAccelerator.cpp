@@ -39,16 +39,15 @@ namespace quantum {
 
 std::shared_ptr<AcceleratorBuffer>
 DWAccelerator::createBuffer(const std::string &varId) {
-  auto options = RuntimeOptions::instance();
   std::string solverName = "DW_2000Q_VFYC_2";
-  if (options->exists("dwave-solver")) {
-    solverName = (*options)["dwave-solver"];
+  if (xacc::optionExists("dwave-solver")) {
+    solverName = xacc::getOption("dwave-solver");
   }
   if (!availableSolvers.count(solverName)) {
     xacc::error(solverName + " is not available for creating a buffer.");
   }
   auto solver = availableSolvers[solverName];
-  auto buffer = std::make_shared<AQCAcceleratorBuffer>(varId, solver.nQubits);
+  auto buffer = std::make_shared<AcceleratorBuffer>(varId, solver.nQubits);
   storeBuffer(varId, buffer);
   return buffer;
 }
@@ -59,7 +58,7 @@ DWAccelerator::createBuffer(const std::string &varId, const int size) {
     xacc::error("Invalid buffer size.");
   }
 
-  auto buffer = std::make_shared<AQCAcceleratorBuffer>(varId, size);
+  auto buffer = std::make_shared<AcceleratorBuffer>(varId, size);
   storeBuffer(varId, buffer);
   return buffer;
 }
@@ -121,14 +120,18 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
     xacc::error("Invalid kernel.");
   }
 
-  auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
-  if (!aqcBuffer) {
-    xacc::error("Invalid AcceleratorBuffer passed to DW Accelerator. Must be "
-                "an AQCAcceleratorBuffer.");
+//   auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
+//   if (!aqcBuffer) {
+//     xacc::error("Invalid AcceleratorBuffer passed to DW Accelerator. Must be "
+//                 "an AQCAcceleratorBuffer.");
+//   }
+
+  auto tmpembedding = boost::get<std::map<int,std::vector<int>>>(buffer->getInformation("embedding"));
+  Embedding embedding;
+  for (auto& kv : tmpembedding) {
+      embedding.insert({kv.first, kv.second});
   }
-
-  auto embedding = aqcBuffer->getEmbedding();
-
+  
   // Get the ParameterSetter
   std::shared_ptr<ParameterSetter> parameterSetter;
   if (xacc::optionExists("dwave-parameter-setter")) {
@@ -247,7 +250,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>>
 DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
                                const std::string &response) {
 
-  auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
+//   auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
 
   bool jobCompleted = false;
   Document doc;
@@ -319,18 +322,22 @@ DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
       auto subBuffer = bitStr.substr(i, nBitsPerMeasurementPadded);
       boost::dynamic_bitset<> bset(subBuffer.substr(0, activeVarsSize));
       counter++;
-      aqcBuffer->appendMeasurement(bset);
+      buffer->appendMeasurement(bset);
     }
 
-    aqcBuffer->setEnergies(energies);
-    aqcBuffer->setNumberOfOccurrences(numOccurrences);
-    aqcBuffer->setActiveVariableIndices(active_vars);
+    buffer->addExtraInfo("energies", ExtraInfo(energies));
+    buffer->addExtraInfo("num-occurrences", ExtraInfo(numOccurrences));
+    buffer->addExtraInfo("active-vars", ExtraInfo(active_vars));
 
-    std::cout << "NExecs: " << aqcBuffer->getNumberOfExecutions() << "\n";
-    std::cout << "Min Meas: " << aqcBuffer->getLowestEnergy() << ", "
-              << aqcBuffer->getLowestEnergyMeasurement() << "\n";
-    std::cout << "Max Prob Meas: " << aqcBuffer->getMostProbableEnergy() << ", "
-              << aqcBuffer->getMostProbableMeasurement() << "\n";
+    // aqcBuffer->setEnergies(energies);
+    // aqcBuffer->setNumberOfOccurrences(numOccurrences);
+    // aqcBuffer->setActiveVariableIndices(active_vars);
+
+    // std::cout << "NExecs: " << aqcBuffer->getNumberOfExecutions() << "\n";
+    // std::cout << "Min Meas: " << aqcBuffer->getLowestEnergy() << ", "
+    //           << aqcBuffer->getLowestEnergyMeasurement() << "\n";
+    // std::cout << "Max Prob Meas: " << aqcBuffer->getMostProbableEnergy() << ", "
+    //           << aqcBuffer->getMostProbableMeasurement() << "\n";
 
   } else {
     xacc::error("Error in executing D-Wave QPU.");
@@ -343,7 +350,6 @@ void DWAccelerator::searchAPIKey(std::string &key, std::string &url) {
 
   // Search for the API Key in $HOME/.dwave_config,
   // $DWAVE_CONFIG, or in the command line argument --dwave-api-key
-  auto options = RuntimeOptions::instance();
   boost::filesystem::path dwaveConfig(std::string(getenv("HOME")) +
                                       "/.dwave_config");
 
@@ -355,15 +361,15 @@ void DWAccelerator::searchAPIKey(std::string &key, std::string &url) {
   } else {
 
     // Ensure that the user has provided an api-key
-    if (!options->exists("dwave-api-key")) {
+    if (!xacc::optionExists("dwave-api-key")) {
       xacc::error("Cannot execute kernel on DW chip without API Key.");
     }
 
     // Set the API Key
-    key = (*options)["dwave-api-key"];
+    key = xacc::getOption("dwave-api-key");
 
-    if (options->exists("dwave-api-url")) {
-      url = (*options)["dwave-api-url"];
+    if (xacc::optionExists("dwave-api-url")) {
+      url = xacc::getOption("dwave-api-url");
     }
   }
 

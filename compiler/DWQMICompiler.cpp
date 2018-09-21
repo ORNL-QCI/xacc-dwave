@@ -61,15 +61,15 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string &src,
   // of qubits for the D-Wave -- all of them.
   auto bufName = acc->getAllocatedBufferNames()[0];
   auto buffer = acc->getBuffer(bufName);
-  std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer =
-      std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
-  if (!aqcBuffer) {
-    xacc::error("Invalid AcceleratorBuffer passed to DW QMI Compiler. Must be "
-                "an AQCAcceleratorBuffer.");
-  }
+//   std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer =
+//       std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
+//   if (!aqcBuffer) {
+//     xacc::error("Invalid AcceleratorBuffer passed to DW QMI Compiler. Must be "
+//                 "an AQCAcceleratorBuffer.");
+//   }
 
   tree::ParseTree *tree = parser.xaccsrc();
-  DWQMIListener listener(ir, hardwareGraph, aqcBuffer);
+  DWQMIListener listener(ir, hardwareGraph, buffer);
   tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
 
   return ir;

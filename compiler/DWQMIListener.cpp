@@ -29,7 +29,6 @@
  *
  **********************************************************************************/
 #include "DWQMIListener.hpp"
-#include "AQCAcceleratorBuffer.hpp"
 #include "DWGraph.hpp"
 #include "DWIR.hpp"
 #include "DWKernel.hpp"
@@ -49,8 +48,8 @@ namespace quantum {
 DWQMIListener::DWQMIListener(
     std::shared_ptr<xacc::IR> ir,
     std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph,
-    std::shared_ptr<AQCAcceleratorBuffer> aqcBuffer)
-    : ir(ir), hardwareGraph(hardwareGraph), aqcBuffer(aqcBuffer) {}
+    std::shared_ptr<AcceleratorBuffer> aqcBuffer)
+    : ir(ir), hardwareGraph(hardwareGraph), buffer(aqcBuffer) {}
 
 void DWQMIListener::enterXacckernel(
     dwqmi::DWQMIParser::XacckernelContext *ctx) {
@@ -110,8 +109,8 @@ void DWQMIListener::exitXacckernel(dwqmi::DWQMIParser::XacckernelContext *ctx) {
   }
 
   // Add the embedding to the AcceleratorBuffer
-  aqcBuffer->setEmbedding(embedding);
-
+  buffer->addExtraInfo("embedding", ExtraInfo(embedding));
+  
   ir->addKernel(curFunc);
 };
 
