@@ -325,19 +325,12 @@ DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
       buffer->appendMeasurement(bset);
     }
 
+    auto timing = doc["answer"]["timing"]["total_real_time"].GetInt() * 1e-6;
+    
     buffer->addExtraInfo("energies", ExtraInfo(energies));
     buffer->addExtraInfo("num-occurrences", ExtraInfo(numOccurrences));
     buffer->addExtraInfo("active-vars", ExtraInfo(active_vars));
-
-    // aqcBuffer->setEnergies(energies);
-    // aqcBuffer->setNumberOfOccurrences(numOccurrences);
-    // aqcBuffer->setActiveVariableIndices(active_vars);
-
-    // std::cout << "NExecs: " << aqcBuffer->getNumberOfExecutions() << "\n";
-    // std::cout << "Min Meas: " << aqcBuffer->getLowestEnergy() << ", "
-    //           << aqcBuffer->getLowestEnergyMeasurement() << "\n";
-    // std::cout << "Max Prob Meas: " << aqcBuffer->getMostProbableEnergy() << ", "
-    //           << aqcBuffer->getMostProbableMeasurement() << "\n";
+    buffer->addExtraInfo("execution-time", ExtraInfo(timing));
 
   } else {
     xacc::error("Error in executing D-Wave QPU.");
