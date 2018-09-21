@@ -28,7 +28,7 @@
  *   Initial API and implementation - Alex McCaskey
  *
  **********************************************************************************/
-#include "AQCAcceleratorBuffer.hpp"
+#include "AcceleratorBuffer.hpp"
 #include "DWQMICompiler.hpp"
 #include "DefaultParameterSetter.hpp"
 #include "XACC.hpp"
@@ -56,7 +56,7 @@ public:
 
   virtual std::shared_ptr<xacc::AcceleratorBuffer>
   createBuffer(const std::string &varId) {
-    auto b = std::make_shared<AQCAcceleratorBuffer>(varId, 1);
+    auto b = std::make_shared<AcceleratorBuffer>(varId, 1);
     storeBuffer(varId, b);
   }
 
@@ -68,7 +68,7 @@ public:
 
   virtual std::shared_ptr<xacc::AcceleratorBuffer>
   getBuffer(const std::string &varid) {
-    return std::make_shared<AQCAcceleratorBuffer>("hello", 1);
+    return std::make_shared<AcceleratorBuffer>("hello", 1);
   }
 
   virtual void initialize() {}
@@ -97,7 +97,7 @@ public:
    */
   virtual std::shared_ptr<xacc::AcceleratorBuffer>
   createBuffer(const std::string &varId, const int size) {
-    auto b = std::make_shared<AQCAcceleratorBuffer>(varId, size);
+    auto b = std::make_shared<AcceleratorBuffer>(varId, size);
     storeBuffer(varId, b);
   }
 

@@ -29,7 +29,7 @@
  *
  **********************************************************************************/
 #include "DWQMICompiler.hpp"
-#include "AQCAcceleratorBuffer.hpp"
+#include "AcceleratorBuffer.hpp"
 #include "RuntimeOptions.hpp"
 #include <boost/algorithm/string.hpp>
 
