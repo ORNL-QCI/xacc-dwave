@@ -120,18 +120,20 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
     xacc::error("Invalid kernel.");
   }
 
-//   auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
-//   if (!aqcBuffer) {
-//     xacc::error("Invalid AcceleratorBuffer passed to DW Accelerator. Must be "
-//                 "an AQCAcceleratorBuffer.");
-//   }
+  //   auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
+  //   if (!aqcBuffer) {
+  //     xacc::error("Invalid AcceleratorBuffer passed to DW Accelerator. Must
+  //     be "
+  //                 "an AQCAcceleratorBuffer.");
+  //   }
 
-  auto tmpembedding = boost::get<std::map<int,std::vector<int>>>(buffer->getInformation("embedding"));
+  auto tmpembedding = boost::get<std::map<int, std::vector<int>>>(
+      buffer->getInformation("embedding"));
   Embedding embedding;
-  for (auto& kv : tmpembedding) {
-      embedding.insert({kv.first, kv.second});
+  for (auto &kv : tmpembedding) {
+    embedding.insert({kv.first, kv.second});
   }
-  
+
   // Get the ParameterSetter
   std::shared_ptr<ParameterSetter> parameterSetter;
   if (xacc::optionExists("dwave-parameter-setter")) {
@@ -232,15 +234,13 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
   boost::replace_all(program, ";", "");
   jsonStr += "[{ \"solver\" : \"" + solverName + "\", \"type\" : \"" +
              solveType + "\", \"data\" : \"" + std::to_string(solver.nQubits) +
-             " " + std::to_string(nQMILines - 1) + "\\n" +
-             program +
+             " " + std::to_string(nQMILines - 1) + "\\n" + program +
              "\", \"params\": { \"num_reads\" : " + trials;
-    if (!boost::contains(solverName, "c4-sw")) {
-        jsonStr +=
-             ", \"anneal_schedule\" : " + annealingStr;
-    }
-    jsonStr += ", \"auto_scale\" : true } }]";
-    
+  if (!boost::contains(solverName, "c4-sw")) {
+    jsonStr += ", \"anneal_schedule\" : " + annealingStr;
+  }
+  jsonStr += ", \"auto_scale\" : true } }]";
+
   boost::replace_all(jsonStr, "\n", "\\n");
 
   return jsonStr;
@@ -250,7 +250,7 @@ std::vector<std::shared_ptr<AcceleratorBuffer>>
 DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
                                const std::string &response) {
 
-//   auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
+  //   auto aqcBuffer = std::dynamic_pointer_cast<AQCAcceleratorBuffer>(buffer);
 
   bool jobCompleted = false;
   Document doc;
@@ -301,6 +301,7 @@ DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
     auto solutionsStrEncoded =
         std::string(doc["answer"]["solutions"].GetString());
     auto decoded = base64_decode(solutionsStrEncoded);
+    // xacc::info("DECODED: " + decoded);
     std::string bitStr = "";
     std::stringstream ss;
     for (std::size_t i = 0; i < decoded.size(); ++i) {
@@ -315,22 +316,21 @@ DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
       active_vars.push_back(activeVars[i].GetInt());
     }
 
-    auto nBitsPerMeasurementPadded = ((activeVarsSize + 8 - 1) / 8) * 8;
-    auto nPadBits = nBitsPerMeasurementPadded - activeVarsSize;
-    int counter = 0;
-    for (int i = 0; i < bitStr.size(); i += nBitsPerMeasurementPadded) {
-      auto subBuffer = bitStr.substr(i, nBitsPerMeasurementPadded);
-      boost::dynamic_bitset<> bset(subBuffer.substr(0, activeVarsSize));
-      counter++;
-      buffer->appendMeasurement(bset);
+    int start = 0;
+    for (auto &count : numOccurrences) {
+      auto solution = bitStr.substr(start, activeVarsSize);
+      xacc::info(std::to_string(solution.length()) + ", " + solution);
+      buffer->appendMeasurement(solution, count);
+      start += activeVarsSize;
     }
 
     auto timing = doc["answer"]["timing"]["total_real_time"].GetInt() * 1e-6;
-    
+
     buffer->addExtraInfo("energies", ExtraInfo(energies));
     buffer->addExtraInfo("num-occurrences", ExtraInfo(numOccurrences));
     buffer->addExtraInfo("active-vars", ExtraInfo(active_vars));
     buffer->addExtraInfo("execution-time", ExtraInfo(timing));
+    // buffer->print();
 
   } else {
     xacc::error("Error in executing D-Wave QPU.");
