@@ -319,7 +319,6 @@ DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
     int start = 0;
     for (auto &count : numOccurrences) {
       auto solution = bitStr.substr(start, activeVarsSize);
-      xacc::info(std::to_string(solution.length()) + ", " + solution);
       buffer->appendMeasurement(solution, count);
       start += activeVarsSize;
     }
