@@ -93,7 +93,7 @@ const std::string DWQMICompiler::translate(const std::string &bufferVariable,
   std::string src = "__qpu__ " + function->name() + "(AcceleratorBuffer b";
 
   for (auto p : function->getParameters())
-    src += ", double " + boost::lexical_cast<std::string>(p);
+    src += ", double " + p.toString();
 
   src += ") {\n";
 
@@ -103,7 +103,7 @@ const std::string DWQMICompiler::translate(const std::string &bufferVariable,
     auto param = inst->getParameter(0);
     std::stringstream s;
     s << "   " << bits[0] << " " << bits[1] << " "
-      << boost::lexical_cast<std::string>(param) << ";\n";
+      << param.toString() << ";\n";
     src += s.str();
   }
   src += "}";

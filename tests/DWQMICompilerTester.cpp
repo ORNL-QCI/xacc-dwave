@@ -214,7 +214,7 @@ TEST(DWQMICompilerTester, checkVariableWeight) {
   std::cout << "QMI:\n" << qmi << "\n";
 
   auto f = ir->getKernel("f");
-  EXPECT_TRUE(f->getInstruction(0)->getParameter(0).which() == 3);
+  EXPECT_TRUE(f->getInstruction(0)->getParameter(0).isVariable());
   EXPECT_TRUE(boost::get<std::string>(f->getInstruction(0)->getParameter(0)) ==
               "h0");
 
@@ -222,7 +222,7 @@ TEST(DWQMICompilerTester, checkVariableWeight) {
   params(0) = 2.2;
   auto evaled = ir->getKernel("f")->operator()(params);
 
-  EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).which() == 1);
+  EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).isNumeric());
   EXPECT_NEAR(boost::get<double>(evaled->getInstruction(0)->getParameter(0)),
               2.2, 1e-4);
 
@@ -231,7 +231,7 @@ TEST(DWQMICompilerTester, checkVariableWeight) {
   params(0) = 3.3;
   evaled = ir->getKernel("f")->operator()(params);
 
-  EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).which() == 1);
+  EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).isNumeric());
   EXPECT_NEAR(boost::get<double>(evaled->getInstruction(0)->getParameter(0)),
               3.3, 1e-4);
 
@@ -254,8 +254,8 @@ TEST(DWQMICompilerTester, checkMultipleVariableWeights) {
   std::cout << "QMI:\n" << qmi << "\n";
 
   auto f = ir->getKernel("f");
-  EXPECT_TRUE(f->getInstruction(0)->getParameter(0).which() == 3);
-  EXPECT_TRUE(f->getInstruction(1)->getParameter(0).which() == 3);
+  EXPECT_TRUE(f->getInstruction(0)->getParameter(0).isVariable());
+  EXPECT_TRUE(f->getInstruction(1)->getParameter(0).isVariable());
   EXPECT_TRUE(boost::get<std::string>(f->getInstruction(0)->getParameter(0)) ==
               "h0");
   EXPECT_TRUE(boost::get<std::string>(f->getInstruction(1)->getParameter(0)) ==
@@ -268,8 +268,8 @@ TEST(DWQMICompilerTester, checkMultipleVariableWeights) {
   auto evaled = ir->getKernel("f")->operator()(params2);
   std::cout << "done evaluating 2 params\n";
 
-  EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).which() == 1);
-  EXPECT_TRUE(evaled->getInstruction(1)->getParameter(0).which() == 1);
+  EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).isNumeric());
+  EXPECT_TRUE(evaled->getInstruction(1)->getParameter(0).isNumeric());
   EXPECT_NEAR(boost::get<double>(evaled->getInstruction(0)->getParameter(0)),
               2.2, 1e-4);
   EXPECT_NEAR(boost::get<double>(evaled->getInstruction(1)->getParameter(0)),
