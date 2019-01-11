@@ -323,13 +323,15 @@ DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
       start += activeVarsSize;
     }
 
-    auto timing = doc["answer"]["timing"]["total_real_time"].GetInt() * 1e-6;
+    // FIXME CHECK WE HAVE total_real_time
+    auto& timing = doc["answer"]["timing"]; 
+    if (timing.HasMember("total_real_time")) {
+        buffer->addExtraInfo("execution-time", ExtraInfo(timing["total_real_time"].GetInt() * 1e-6));
+    }
 
     buffer->addExtraInfo("energies", ExtraInfo(energies));
     buffer->addExtraInfo("num-occurrences", ExtraInfo(numOccurrences));
     buffer->addExtraInfo("active-vars", ExtraInfo(active_vars));
-    buffer->addExtraInfo("execution-time", ExtraInfo(timing));
-    // buffer->print();
 
   } else {
     xacc::error("Error in executing D-Wave QPU.");
