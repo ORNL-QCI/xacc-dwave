@@ -84,7 +84,7 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string &src) {
 const std::string DWQMICompiler::translate(const std::string &bufferVariable,
                                            std::shared_ptr<Function> function) {
 
-  if (!std::dynamic_pointer_cast<DWKernel>(function)) {
+  if (!std::dynamic_pointer_cast<DWFunction>(function)) {
     xacc::error("Cannot translate non-DW Kernels to DW-QMI.");
   }
 

@@ -32,7 +32,7 @@
 #define QUANTUM_GATE_ACCELERATORS_DWACCELERATOR_HPP_
 
 #include "AcceleratorBuffer.hpp"
-#include "DWKernel.hpp"
+#include "DWFunction.hpp"
 #include "DWQMI.hpp"
 #include "RemoteAccelerator.hpp"
 #include <boost/algorithm/string.hpp>
