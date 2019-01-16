@@ -32,7 +32,7 @@
 #define XACC_IBM_DWQMILISTENER_H
 
 #include "Accelerator.hpp"
-#include "DWKernel.hpp"
+#include "DWFunction.hpp"
 #include "DWQMIBaseListener.h"
 #include "IR.hpp"
 
@@ -55,8 +55,8 @@ protected:
   std::shared_ptr<IR> ir;
   std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph;
   std::shared_ptr<AcceleratorBuffer> buffer;
-  std::map<std::string, std::shared_ptr<DWKernel>> functions;
-  std::shared_ptr<DWKernel> curFunc;
+  std::map<std::string, std::shared_ptr<DWFunction>> functions;
+  std::shared_ptr<DWFunction> curFunc;
 
 public:
   int maxBitIdx = 0;

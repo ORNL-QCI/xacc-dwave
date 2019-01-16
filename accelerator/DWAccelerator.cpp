@@ -115,7 +115,7 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
   if (functions.size() > 1)
     xacc::error("D-Wave Accelerator can only launch one job at a time.");
 
-  auto dwKernel = std::dynamic_pointer_cast<DWKernel>(functions[0]);
+  auto dwKernel = std::dynamic_pointer_cast<DWFunction>(functions[0]);
   if (!dwKernel) {
     xacc::error("Invalid kernel.");
   }
@@ -182,7 +182,7 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
   auto insts =
       parameterSetter->setParameters(problemGraph, hardwareGraph, embedding);
 
-  auto newKernel = std::make_shared<DWKernel>(dwKernel->name());
+  auto newKernel = std::make_shared<DWFunction>(dwKernel->name());
   // Add the instructions to the Kernel
   for (auto i : insts) {
     newKernel->addInstruction(i);
@@ -324,7 +324,7 @@ DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
     }
 
     // FIXME CHECK WE HAVE total_real_time
-    auto& timing = doc["answer"]["timing"]; 
+    auto& timing = doc["answer"]["timing"];
     if (timing.HasMember("total_real_time")) {
         buffer->addExtraInfo("execution-time", ExtraInfo(timing["total_real_time"].GetInt() * 1e-6));
     }

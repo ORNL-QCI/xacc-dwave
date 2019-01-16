@@ -31,7 +31,7 @@
 #include "DWQMIListener.hpp"
 #include "DWGraph.hpp"
 #include "DWIR.hpp"
-#include "DWKernel.hpp"
+#include "DWFunction.hpp"
 #include "DWQMI.hpp"
 #include "Embedding.hpp"
 #include "EmbeddingAlgorithm.hpp"
@@ -61,7 +61,7 @@ void DWQMIListener::enterXacckernel(
         ctx->typedparam(static_cast<size_t>(i))->id()->getText());
     params.push_back(InstructionParameter(functionVarNames.back()));
   }
-  curFunc = std::make_shared<DWKernel>(ctx->kernelname->getText(), params);
+  curFunc = std::make_shared<DWFunction>(ctx->kernelname->getText(), params);
   functions.insert({curFunc->name(), curFunc});
 }
 
@@ -110,7 +110,7 @@ void DWQMIListener::exitXacckernel(dwqmi::DWQMIParser::XacckernelContext *ctx) {
 
   // Add the embedding to the AcceleratorBuffer
   buffer->addExtraInfo("embedding", ExtraInfo(embedding));
-  
+
   ir->addKernel(curFunc);
 };
 
