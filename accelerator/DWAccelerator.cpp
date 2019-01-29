@@ -293,11 +293,18 @@ DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
     std::vector<int> numOccurrences, active_vars;
     auto energyArray = doc["answer"]["energies"].GetArray();
     auto numOccArray = doc["answer"]["num_occurrences"].GetArray();
+    double minEnergy = std::numeric_limits<double>::max();
+    int idx = 0;
     for (int i = 0; i < energyArray.Size(); i++) {
       energies.push_back(energyArray[i].GetDouble());
       numOccurrences.push_back(numOccArray[i].GetInt());
+      if (energyArray[i].GetDouble() < minEnergy) {
+          minEnergy = energyArray[i].GetDouble();
+          idx = i;
+      }
     }
 
+    buffer->addExtraInfo("ground_energy", ExtraInfo(minEnergy));
     auto solutionsStrEncoded =
         std::string(doc["answer"]["solutions"].GetString());
     auto decoded = base64_decode(solutionsStrEncoded);
@@ -320,6 +327,9 @@ DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
     for (auto &count : numOccurrences) {
       auto solution = bitStr.substr(start, activeVarsSize);
       buffer->appendMeasurement(solution, count);
+      if (start == 0) {
+          buffer->addExtraInfo("ground_state", ExtraInfo(solution));
+      }
       start += activeVarsSize;
     }
 

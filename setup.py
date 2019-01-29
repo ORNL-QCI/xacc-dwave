@@ -19,6 +19,7 @@ import shutil
 import sysconfig
 
 env = os.environ.copy()
+_version = open(os.path.join(os.getcwd(), 'VERSION')).read().strip()
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -52,9 +53,9 @@ class CMakeBuild(build_ext):
         print(dir(self))
         print(self.build_lib)
   
-        import pyxacc
+        import xacc
         cmake_args = ['-DPYTHON_INCLUDE_DIR=' + sysconfig.get_paths()['platinclude'], 
-                      '-DXACC_DIR='+os.path.dirname(os.path.realpath(pyxacc.__file__)),
+                      '-DXACC_DIR='+os.path.dirname(os.path.realpath(xacc.__file__)),
 		      '-DFROM_SETUP_PY=TRUE']
         args = sys.argv[1:]
         if 'install' not in args:
@@ -77,12 +78,13 @@ class CMakeBuild(build_ext):
 
 s = setup(
     name='xacc-dwave',
-    version='0.1.0',
+    version=_version,
     author='Alex McCaskey',
+    install_requires=['xacc'],
     author_email='xacc-dev@eclipse.org',
     packages=find_packages('python'),
     package_dir={'':'python'},
-    description='XACC plugins for interacting with DWave QPU', 
+    description='XACC plugins for interacting with D-Wave QPU/QVM', 
     long_description='XACC provides a language and hardware agnostic programming framework for hybrid classical-quantum applications.',
     ext_modules=[CMakeExtension('pyxaccdwave')],
     cmdclass={'build_ext':CMakeBuild},# 'install':InstallCommand},
