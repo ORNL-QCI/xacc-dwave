@@ -28,10 +28,14 @@ if(${XACC_HAS_ANTLR})
    add_subdirectory(compiler)
 endif()
 add_subdirectory(accelerator)
+add_subdirectory(ir)
 add_subdirectory(tpls/xacc-cmr)
 if(PYTHON_INCLUDE_DIR)
    add_subdirectory(python)
 endif()
+
+file(GLOB PYDECORATORS ${CMAKE_CURRENT_SOURCE_DIR}/python/decorators/*.py)
+install(FILES ${PYDECORATORS} DESTINATION ${CMAKE_INSTALL_PREFIX}/py-plugins)
 
 if(DWAVE_BUILD_TESTS)
    add_subdirectory(examples)
@@ -40,4 +44,4 @@ if(DWAVE_BUILD_TESTS)
    include_directories(${CMAKE_SOURCE_DIR}/compiler/runtime/src)
    add_subdirectory(tests)
 endif()
-   
+
