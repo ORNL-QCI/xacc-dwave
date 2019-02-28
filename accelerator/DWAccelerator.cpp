@@ -39,7 +39,7 @@ namespace quantum {
 
 std::shared_ptr<AcceleratorBuffer>
 DWAccelerator::createBuffer(const std::string &varId) {
-  std::string solverName = "DW_2000Q_VFYC_2";
+  std::string solverName = "DW_2000Q_VFYC_2_1";
   if (xacc::optionExists("dwave-solver")) {
     solverName = xacc::getOption("dwave-solver");
   }
@@ -191,7 +191,7 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
   std::vector<std::string> splitLines;
   boost::split(splitLines, newKernel->toString(""), boost::is_any_of("\n"));
   auto nQMILines = splitLines.size();
-  std::string jsonStr = "", solverName = "DW_2000Q_VFYC_2", solveType = "ising",
+  std::string jsonStr = "", solverName = "DW_2000Q_VFYC_2_1", solveType = "ising",
               trials = "100", annealTime = "20";
 
   if (xacc::optionExists("dwave-solver")) {
@@ -416,7 +416,7 @@ void DWAccelerator::findApiKeyInFile(std::string &apiKey, std::string &url,
  * @return connectivityGraph The graph structure of this Accelerator
  */
 std::shared_ptr<AcceleratorGraph> DWAccelerator::getAcceleratorConnectivity() {
-  std::string solverName = "DW_2000Q_VFYC_2";
+  std::string solverName = "DW_2000Q_VFYC_2_1";
 
   if (xacc::optionExists("dwave-solver")) {
     solverName = xacc::getOption("dwave-solver");
