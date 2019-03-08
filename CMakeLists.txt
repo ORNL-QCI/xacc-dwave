@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 project(xacc-dwave LANGUAGES CXX)
 
 option(DWAVE_BUILD_TESTS "Build test programs" OFF)
+if (FROM_SETUP_PY AND NOT APPLE)
+   message(STATUS "Running build from setup.py, linking to static libstdc++")
+   set (CMAKE_SHARED_LINKER_FLAGS "-static-libstdc++" CACHE INTERNAL "" FORCE)
+endif()
 
 set(CMAKE_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
@@ -24,9 +28,7 @@ include_directories(${CMAKE_SOURCE_DIR}/utils)
 
 link_directories(${XACC_LIBRARY_DIR})
 
-if(${XACC_HAS_ANTLR})
-   add_subdirectory(compiler)
-endif()
+add_subdirectory(compiler)
 add_subdirectory(accelerator)
 add_subdirectory(ir)
 add_subdirectory(tpls/xacc-cmr)
