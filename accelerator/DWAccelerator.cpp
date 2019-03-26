@@ -30,7 +30,6 @@
  **********************************************************************************/
 #include "DWAccelerator.hpp"
 #include "ParameterSetter.hpp"
-#include <boost/filesystem.hpp>
 #include <fstream>
 #include <memory>
 #include <thread>
@@ -84,7 +83,7 @@ void DWAccelerator::initialize() {
     for (auto i = 0; i < document.Size(); i++) {
       DWSolver solver;
       solver.name = document[i]["id"].GetString();
-      boost::trim(solver.name);
+      xacc::trim(solver.name);
       solver.description = document[i]["description"].GetString();
       if (document[i]["properties"].FindMember("j_range") !=
           document[i]["properties"].MemberEnd()) {
@@ -203,7 +202,7 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
   }
 
   std::vector<std::string> splitLines;
-  boost::split(splitLines, newKernel->toString(""), boost::is_any_of("\n"));
+  splitLines = xacc::split( newKernel->toString(""),'\n');
   auto nQMILines = splitLines.size();
   std::string jsonStr = "", solverName = "DW_2000Q_VFYC_2_1", solveType = "ising",
               trials = "100", annealTime = "20";
@@ -245,17 +244,17 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
   }
 
   auto program = newKernel->toString("");
-  boost::replace_all(program, ";", "");
+  program = std::regex_replace(program, std::regex(";"), "");
   jsonStr += "[{ \"solver\" : \"" + solverName + "\", \"type\" : \"" +
              solveType + "\", \"data\" : \"" + std::to_string(solver.nQubits) +
              " " + std::to_string(nQMILines - 1) + "\\n" + program +
              "\", \"params\": { \"num_reads\" : " + trials;
-  if (!boost::contains(solverName, "c4-sw")) {
+  if (solverName.find("c4-sw") == std::string::npos) {
     jsonStr += ", \"anneal_schedule\" : " + annealingStr;
   }
   jsonStr += ", \"auto_scale\" : true } }]";
 
-  boost::replace_all(jsonStr, "\n", "\\n");
+  jsonStr = std::regex_replace(jsonStr, std::regex("\n"),"\\n");
 
   return jsonStr;
 }
@@ -284,11 +283,11 @@ DWAccelerator::processResponse(std::shared_ptr<AcceleratorBuffer> buffer,
     msg = handleExceptionRestClientGet(url, "/sapi/problems/" + jobId, headers);
 
     // Search the result for the status : COMPLETED indicator
-    if (boost::contains(msg, "COMPLETED")) {
+    if (msg.find("COMPLETED") != std::string::npos) {
       jobCompleted = true;
     }
 
-    if (boost::contains(msg, "FAILED")) {
+    if (msg.find("FAILED") != std::string::npos) {
       Document d;
       d.Parse(msg);
       xacc::error("D-Wave Execution Failure: " +
@@ -368,13 +367,13 @@ void DWAccelerator::searchAPIKey(std::string &key, std::string &url) {
 
   // Search for the API Key in $HOME/.dwave_config,
   // $DWAVE_CONFIG, or in the command line argument --dwave-api-key
-  boost::filesystem::path dwaveConfig(std::string(getenv("HOME")) +
+  std::string dwaveConfig(std::string(getenv("HOME")) +
                                       "/.dwave_config");
 
-  if (boost::filesystem::exists(dwaveConfig)) {
+  if (xacc::fileExists(dwaveConfig)) {
     findApiKeyInFile(key, url, dwaveConfig);
   } else if (const char *nonStandardPath = getenv("DWAVE_CONFIG")) {
-    boost::filesystem::path nonStandardDwaveConfig(nonStandardPath);
+    std::string nonStandardDwaveConfig(nonStandardPath);
     findApiKeyInFile(key, url, nonStandardDwaveConfig);
   } else {
 
@@ -400,25 +399,25 @@ void DWAccelerator::searchAPIKey(std::string &key, std::string &url) {
 }
 
 void DWAccelerator::findApiKeyInFile(std::string &apiKey, std::string &url,
-                                     boost::filesystem::path &p) {
-  std::ifstream stream(p.string());
+                                     const std::string &p) {
+  std::ifstream stream(p);
   std::string contents((std::istreambuf_iterator<char>(stream)),
                        std::istreambuf_iterator<char>());
 
   std::vector<std::string> lines;
-  boost::split(lines, contents, boost::is_any_of("\n"));
+  lines = xacc::split(contents,'\n');
   for (auto l : lines) {
-    if (boost::contains(l, "key")) {
+    if (l.find("key") != std::string::npos) {
       std::vector<std::string> split;
-      boost::split(split, l, boost::is_any_of(":"));
+      split = xacc::split(l, ':');
       auto key = split[1];
-      boost::trim(key);
+      xacc::trim(key);
       apiKey = key;
-    } else if (boost::contains(l, "url")) {
+    } else if (l.find("url") != std::string::npos) {
       std::vector<std::string> split;
-      boost::split(split, l, boost::is_any_of(":"));
+      split = xacc::split( l, ':');
       auto key = split[1] + ":" + split[2];
-      boost::trim(key);
+      xacc::trim(key);
       url = key;
     }
   }

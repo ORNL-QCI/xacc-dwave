@@ -35,8 +35,6 @@
 #include "DWFunction.hpp"
 #include "DWQMI.hpp"
 #include "RemoteAccelerator.hpp"
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
 
 #define RAPIDJSON_HAS_STDSTRING 1
 
@@ -301,7 +299,7 @@ protected:
    * file.
    */
   void findApiKeyInFile(std::string &key, std::string &url,
-                        boost::filesystem::path &p);
+                        const std::string &p);
 };
 
 } // namespace quantum

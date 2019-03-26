@@ -40,7 +40,7 @@ file(GLOB PYDECORATORS ${CMAKE_CURRENT_SOURCE_DIR}/python/decorators/*.py)
 install(FILES ${PYDECORATORS} DESTINATION ${CMAKE_INSTALL_PREFIX}/py-plugins)
 
 if(DWAVE_BUILD_TESTS)
-   add_subdirectory(examples)
+   #add_subdirectory(examples)
    include_directories(${CMAKE_SOURCE_DIR}/accelerator)
    include_directories(${CMAKE_SOURCE_DIR}/compiler)
    include_directories(${CMAKE_SOURCE_DIR}/compiler/runtime/src)
