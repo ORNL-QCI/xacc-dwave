@@ -33,6 +33,7 @@
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <memory>
+#include <thread>
 
 namespace xacc {
 namespace quantum {
@@ -127,7 +128,7 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
   //                 "an AQCAcceleratorBuffer.");
   //   }
 
-  auto tmpembedding = boost::get<std::map<int, std::vector<int>>>(
+  auto tmpembedding = mpark::get<std::map<int, std::vector<int>>>(
       buffer->getInformation("embedding"));
   Embedding embedding;
   for (auto &kv : tmpembedding) {
@@ -159,13 +160,26 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
 
   // Reconstruct the Problem Graph
   std::shared_ptr<Anneal> annealingSchedule;
-  auto hardwareGraph = getAcceleratorConnectivity();
+  auto hardwareconnections = getAcceleratorConnectivity();
+        std::set<int> nUniqueBits;
+        for (auto& edge : hardwareconnections) {
+            nUniqueBits.insert(edge.first);
+            nUniqueBits.insert(edge.second);
+        }
+
+        int nBits = *std::max_element(nUniqueBits.begin(), nUniqueBits.end()) + 1;
+
+        auto hardwareGraph = std::make_shared<AcceleratorGraph>(nBits);
+        for (auto& edge : hardwareconnections) {
+            hardwareGraph->addEdge(edge.first, edge.second);
+        }
+
   auto problemGraph = std::make_shared<DWGraph>(maxBitIdx + 1);
   for (auto inst : instructions) {
     if (inst->name() == "dw-qmi") {
       auto qbit1 = inst->bits()[0];
       auto qbit2 = inst->bits()[1];
-      double weightOrBias = boost::get<double>(inst->getParameter(0));
+      double weightOrBias = mpark::get<double>(inst->getParameter(0));
       if (qbit1 == qbit2) {
         problemGraph->setVertexProperties(qbit1, weightOrBias);
       } else {
@@ -415,7 +429,7 @@ void DWAccelerator::findApiKeyInFile(std::string &apiKey, std::string &url,
  *
  * @return connectivityGraph The graph structure of this Accelerator
  */
-std::shared_ptr<AcceleratorGraph> DWAccelerator::getAcceleratorConnectivity() {
+std::vector<std::pair<int,int>> DWAccelerator::getAcceleratorConnectivity() {
   std::string solverName = "DW_2000Q_VFYC_2_1";
 
   if (xacc::optionExists("dwave-solver")) {
@@ -428,10 +442,9 @@ std::shared_ptr<AcceleratorGraph> DWAccelerator::getAcceleratorConnectivity() {
 
   auto solver = availableSolvers[solverName];
 
-  auto graph = std::make_shared<AcceleratorGraph>(solver.nQubits);
-
+  std::vector<std::pair<int,int>> graph;
   for (auto es : solver.edges) {
-    graph->addEdge(es.first, es.second);
+    graph.push_back({es.first,es.second});
   }
 
   return graph;

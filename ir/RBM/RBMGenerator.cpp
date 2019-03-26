@@ -53,8 +53,8 @@ std::shared_ptr<Function> RBMGenerator::generate(
 
     xacc::info("Running RBM IRGenerator.");
 
-    int n_visible = boost::get<int>(parameters[0]);
-    int n_hidden = boost::get<int>(parameters[1]);
+    int n_visible = parameters[0].as<int>();
+    int n_hidden = parameters[1].as<int>();
 
 
     auto kernel = std::make_shared<xacc::quantum::DWFunction>("rbm_function");

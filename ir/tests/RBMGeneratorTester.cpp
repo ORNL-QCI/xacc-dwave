@@ -16,10 +16,10 @@ TEST(RBMGeneratorTester, checkRBM){
 
     std::cout << f->toString() << std::endl;
     std::cout << f->nParameters() << std::endl;
-    
+
     auto params = f->getParameters();
     for (int i = 0; i < params.size(); i++){
-        std::cout << boost::get<std::string>(params[i]) << std::endl;
+        std::cout << params[i].as<std::string>() << std::endl;
     }
     xacc::Finalize();
 }

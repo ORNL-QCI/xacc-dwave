@@ -71,10 +71,10 @@ public:
     std::vector<std::pair<double, double>> as;
     double s = 1;
 
-    auto ta = boost::get<double>(annealInst->getParameter(0));
-    auto tp = boost::get<double>(annealInst->getParameter(1));
-    auto tq = boost::get<double>(annealInst->getParameter(2));
-    auto direction = boost::get<std::string>(annealInst->getParameter(3));
+    auto ta = mpark::get<double>(annealInst->getParameter(0));
+    auto tp = mpark::get<double>(annealInst->getParameter(1));
+    auto tq = mpark::get<double>(annealInst->getParameter(2));
+    auto direction = mpark::get<std::string>(annealInst->getParameter(3));
 
     auto ti = ta + tp;
     auto tf = ta + tp + tq;
@@ -160,7 +160,7 @@ public:
    *
    * @return connectivityGraph The graph structure of this Accelerator
    */
-  virtual std::shared_ptr<AcceleratorGraph> getAcceleratorConnectivity();
+  virtual std::vector<std::pair<int,int>> getAcceleratorConnectivity();
 
   virtual const std::string
   processInput(std::shared_ptr<AcceleratorBuffer> buffer,
@@ -211,29 +211,28 @@ public:
    * Users can set the api-key, execution type, and number of triels
    * from the command line with these options.
    */
-  virtual std::shared_ptr<options_description> getOptions() {
-    auto desc =
-        std::make_shared<options_description>("D-Wave Accelerator Options");
-    desc->add_options()("dwave-api-key", value<std::string>(),
+  virtual OptionPairs getOptions() {
+    OptionPairs desc {{
+        "dwave-api-key",
                         "Provide the D-Wave API key. This is used if "
-                        "$HOME/.dwave_config is not found")(
-        "dwave-api-url", value<std::string>(),
+                        "$HOME/.dwave_config is not found"},{
+        "dwave-api-url",
         "The D-Wave SAPI URL, "
         "https://qubist.dwavesys.com/sapi "
-        "used by default.")("dwave-solver", value<std::string>(),
-                            "The name of the solver to run on.")(
-        "dwave-num-reads", value<std::string>(),
-        "The number of executions on the chip for the given problem.")(
-        "dwave-anneal-time", value<std::string>(),
-        "The time to evolve the chip - an integer in microseconds.")(
-        "dwave-thermalization", value<std::string>(), "The thermalization...")(
-        "dwave-list-solvers", "List the available solvers at the Qubist URL.")(
-        "dwave-solve-type", value<std::string>(),
-        "The solve type, qubo or ising");
+        "used by default."},{"dwave-solver",
+                            "The name of the solver to run on."},{
+        "dwave-num-reads",
+        "The number of executions on the chip for the given problem."},{
+        "dwave-anneal-time",
+        "The time to evolve the chip - an integer in microseconds."},{
+        "dwave-thermalization", "The thermalization..."},{
+        "dwave-list-solvers", "List the available solvers at the Qubist URL."},{
+        "dwave-solve-type",
+        "The solve type, qubo or ising"}};
     return desc;
   }
 
-  virtual bool handleOptions(variables_map &map) {
+  virtual bool handleOptions(const std::map<std::string, std::string> &map) {
     if (map.count("dwave-list-solvers")) {
       initialize();
 

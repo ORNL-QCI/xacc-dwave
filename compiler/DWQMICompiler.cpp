@@ -46,7 +46,19 @@ namespace quantum {
 std::shared_ptr<IR> DWQMICompiler::compile(const std::string &src,
                                            std::shared_ptr<Accelerator> acc) {
 
-  auto hardwareGraph = acc->getAcceleratorConnectivity();
+  auto hardwareconnections = acc->getAcceleratorConnectivity();
+        std::set<int> nUniqueBits;
+        for (auto& edge : hardwareconnections) {
+            nUniqueBits.insert(edge.first);
+            nUniqueBits.insert(edge.second);
+        }
+
+        int nBits = *std::max_element(nUniqueBits.begin(), nUniqueBits.end()) + 1;
+
+        auto hardwareGraph = std::make_shared<AcceleratorGraph>(nBits);
+        for (auto& edge : hardwareconnections) {
+            hardwareGraph->addEdge(edge.first, edge.second);
+        }
 
   ANTLRInputStream input(src);
   DWQMILexer lexer(&input);

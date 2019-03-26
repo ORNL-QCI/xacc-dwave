@@ -148,20 +148,20 @@ void DWQMIListener::enterAnnealdecl(DWQMIParser::AnnealdeclContext *ctx) {
                                     : InstructionParameter(tqStr);
 
     if (taparam.which() == 3 &&
-        !contains(functionVarNames, boost::get<std::string>(taparam)))
-      xacc::error(boost::get<std::string>(taparam) +
+        !contains(functionVarNames, mpark::get<std::string>(taparam)))
+      xacc::error(mpark::get<std::string>(taparam) +
                   " is an invalid kernel parameter (does not exist in kernel "
                   "arg list)");
 
     if (tpparam.which() == 3 &&
-        !contains(functionVarNames, boost::get<std::string>(tpparam)))
-      xacc::error(boost::get<std::string>(tpparam) +
+        !contains(functionVarNames, mpark::get<std::string>(tpparam)))
+      xacc::error(mpark::get<std::string>(tpparam) +
                   " is an invalid kernel parameter (does not exist in kernel "
                   "arg list)");
 
     if (tqparam.which() == 3 &&
-        !contains(functionVarNames, boost::get<std::string>(tqparam)))
-      xacc::error(boost::get<std::string>(tqparam) +
+        !contains(functionVarNames, mpark::get<std::string>(tqparam)))
+      xacc::error(mpark::get<std::string>(tqparam) +
                   " is an invalid kernel parameter (does not exist in kernel "
                   "arg list)");
 
@@ -220,9 +220,9 @@ void DWQMIListener::enterInst(dwqmi::DWQMIParser::InstContext *ctx) {
                                  : InstructionParameter(valStr);
 
   if (param.which() == 3 &&
-      !contains(functionVarNames, boost::get<std::string>(param)))
+      !contains(functionVarNames, mpark::get<std::string>(param)))
     xacc::error(
-        boost::get<std::string>(param) +
+        mpark::get<std::string>(param) +
         " is an invalid kernel parameter (does not exist in kernel arg list)");
 
   auto instruction =

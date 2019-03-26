@@ -39,8 +39,8 @@ using namespace xacc::quantum;
 
 class FakeDWAcc : public xacc::Accelerator {
 public:
-  virtual std::shared_ptr<xacc::AcceleratorGraph> getAcceleratorConnectivity() {
-    return K44Bipartite().getAcceleratorGraph();
+  virtual std::vector<std::pair<int,int>> getAcceleratorConnectivity() {
+    return std::vector<std::pair<int,int>>{{0,4},{0,5},{0,6},{0,7},{1,4},{1,5},{1,6},{1,7},{2,4},{2,5},{2,6},{2,7},{3,4},{3,5},{3,6},{3,7}};
   }
 
   virtual xacc::AcceleratorType getType() {
@@ -215,24 +215,23 @@ TEST(DWQMICompilerTester, checkVariableWeight) {
 
   auto f = ir->getKernel("f");
   EXPECT_TRUE(f->getInstruction(0)->getParameter(0).isVariable());
-  EXPECT_TRUE(boost::get<std::string>(f->getInstruction(0)->getParameter(0)) ==
+  EXPECT_TRUE(mpark::get<std::string>(f->getInstruction(0)->getParameter(0)) ==
               "h0");
 
-  Eigen::VectorXd params(1);
-  params(0) = 2.2;
+  std::vector<double> params{2.2};
   auto evaled = ir->getKernel("f")->operator()(params);
 
   EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).isNumeric());
-  EXPECT_NEAR(boost::get<double>(evaled->getInstruction(0)->getParameter(0)),
+  EXPECT_NEAR(mpark::get<double>(evaled->getInstruction(0)->getParameter(0)),
               2.2, 1e-4);
 
   std::cout << "HELLO:\n" << evaled->toString("") << "\n";
 
-  params(0) = 3.3;
+  params[0] = 3.3;
   evaled = ir->getKernel("f")->operator()(params);
 
   EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).isNumeric());
-  EXPECT_NEAR(boost::get<double>(evaled->getInstruction(0)->getParameter(0)),
+  EXPECT_NEAR(mpark::get<double>(evaled->getInstruction(0)->getParameter(0)),
               3.3, 1e-4);
 
   std::cout << "HELLO:\n" << evaled->toString("") << "\n";
@@ -256,23 +255,21 @@ TEST(DWQMICompilerTester, checkMultipleVariableWeights) {
   auto f = ir->getKernel("f");
   EXPECT_TRUE(f->getInstruction(0)->getParameter(0).isVariable());
   EXPECT_TRUE(f->getInstruction(1)->getParameter(0).isVariable());
-  EXPECT_TRUE(boost::get<std::string>(f->getInstruction(0)->getParameter(0)) ==
+  EXPECT_TRUE(mpark::get<std::string>(f->getInstruction(0)->getParameter(0)) ==
               "h0");
-  EXPECT_TRUE(boost::get<std::string>(f->getInstruction(1)->getParameter(0)) ==
+  EXPECT_TRUE(mpark::get<std::string>(f->getInstruction(1)->getParameter(0)) ==
               "h1");
 
-  Eigen::VectorXd params2(2);
-  params2(0) = 2.2;
-  params2(1) = 3.3;
+  std::vector<double> params2{2.2,3.3};
   std::cout << "Evaluating 2 params\n";
   auto evaled = ir->getKernel("f")->operator()(params2);
   std::cout << "done evaluating 2 params\n";
 
   EXPECT_TRUE(evaled->getInstruction(0)->getParameter(0).isNumeric());
   EXPECT_TRUE(evaled->getInstruction(1)->getParameter(0).isNumeric());
-  EXPECT_NEAR(boost::get<double>(evaled->getInstruction(0)->getParameter(0)),
+  EXPECT_NEAR(mpark::get<double>(evaled->getInstruction(0)->getParameter(0)),
               2.2, 1e-4);
-  EXPECT_NEAR(boost::get<double>(evaled->getInstruction(1)->getParameter(0)),
+  EXPECT_NEAR(mpark::get<double>(evaled->getInstruction(1)->getParameter(0)),
               3.3, 1e-4);
 
   std::cout << "HELLO:\n" << evaled->toString("") << "\n";
@@ -294,9 +291,9 @@ TEST(DWQMICompilerTester, checkAnneal) {
   auto f = ir->getKernel("f");
   auto qmi = ir->getKernel("f")->toString("");
   std::cout << "QMI:\n" << qmi << "\n";
-  EXPECT_EQ(boost::get<double>(f->getInstruction(0)->getParameter(0)), 10.0);
-  EXPECT_EQ(boost::get<double>(f->getInstruction(0)->getParameter(1)), 10.0);
-  EXPECT_EQ(boost::get<double>(f->getInstruction(0)->getParameter(2)), 10.0);
+  EXPECT_EQ(mpark::get<double>(f->getInstruction(0)->getParameter(0)), 10.0);
+  EXPECT_EQ(mpark::get<double>(f->getInstruction(0)->getParameter(1)), 10.0);
+  EXPECT_EQ(mpark::get<double>(f->getInstruction(0)->getParameter(2)), 10.0);
 }
 
 TEST(DWQMICompilerTester, checkVariableAnneal) {
@@ -316,8 +313,7 @@ TEST(DWQMICompilerTester, checkVariableAnneal) {
   auto qmi = ir->getKernel("f")->toString("");
   std::cout << "QMI:\n" << qmi << "\n";
 
-  Eigen::VectorXd params(5);
-  params << 1, 2, 3, 4, 5;
+  std::vector<double> params{1,2,3,4,5};
   auto evaled = f->operator()(params);
   auto expected = R"expected(anneal ta = 3, tp = 4, tq = 5, forward;
 0 0 1;

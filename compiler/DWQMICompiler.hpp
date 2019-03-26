@@ -101,25 +101,23 @@ public:
    *
    * @return options Description of command line options.
    */
-  virtual std::shared_ptr<options_description> getOptions() {
-    auto desc =
-        std::make_shared<options_description>("D-Wave QMI Compiler Options");
-    desc->add_options()("dwave-embedding", value<std::string>(),
+   OptionPairs getOptions() override {
+    OptionPairs desc{{"dwave-embedding",
                         "Provide the name of the Embedding Algorithm to use "
-                        "during compilation.")(
-        "dwave-parameter-setter", value<std::string>(),
+                        "during compilation."},{
+        "dwave-parameter-setter",
         "Provide the name of the "
-        "ParameterSetter to map logical parameters to physical parameters.")(
-        "dwave-load-embedding", value<std::string>(),
-        "Use the embedding in the given file.")(
-        "dwave-persist-embedding", value<std::string>(),
-        "Persist the computed embedding to the given file name.")(
+        "ParameterSetter to map logical parameters to physical parameters."},{
+        "dwave-load-embedding",
+        "Use the embedding in the given file."},{
+        "dwave-persist-embedding",
+        "Persist the computed embedding to the given file name."},{
         "dwave-list-embedding-algorithms",
-        "List all available embedding algorithms.");
+        "List all available embedding algorithms."}};
     return desc;
   }
 
-  virtual bool handleOptions(variables_map &map) {
+  bool handleOptions(const std::map<std::string, std::string> &map) override {
     if (map.count("dwave-list-embedding-algorithms")) {
       auto ids = xacc::getRegisteredIds<EmbeddingAlgorithm>();
       for (auto i : ids) {
