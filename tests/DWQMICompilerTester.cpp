@@ -43,8 +43,8 @@ public:
     return std::vector<std::pair<int,int>>{{0,4},{0,5},{0,6},{0,7},{1,4},{1,5},{1,6},{1,7},{2,4},{2,5},{2,6},{2,7},{3,4},{3,5},{3,6},{3,7}};
   }
 
-  virtual xacc::AcceleratorType getType() {
-    return xacc::AcceleratorType::qpu_aqc;
+  virtual xacc::Accelerator::AcceleratorType getType() {
+    return xacc::Accelerator::AcceleratorType::qpu_aqc;
   }
 
   virtual bool isValidBufferSize(const int nBits) { return true; }

@@ -35,6 +35,7 @@
 #include "EmbeddingAlgorithm.hpp"
 #include "XACC.hpp"
 #include "antlr4-runtime.h"
+#include "xacc_service.hpp"
 
 namespace xacc {
 

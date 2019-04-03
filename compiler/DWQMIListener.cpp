@@ -40,6 +40,7 @@
 #include <iostream>
 
 #include "XACC.hpp"
+#include "xacc_service.hpp"
 
 using namespace dwqmi;
 

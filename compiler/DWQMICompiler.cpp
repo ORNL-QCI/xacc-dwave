@@ -31,7 +31,6 @@
 #include "DWQMICompiler.hpp"
 #include "AcceleratorBuffer.hpp"
 #include "RuntimeOptions.hpp"
-#include <boost/algorithm/string.hpp>
 
 #include "DWQMILexer.h"
 #include "DWQMIListener.hpp"

@@ -33,6 +33,7 @@
 #include <fstream>
 #include <memory>
 #include <thread>
+#include "xacc_service.hpp"
 
 namespace xacc {
 namespace quantum {
