@@ -34,6 +34,8 @@
 #include <memory>
 #include <thread>
 #include "xacc_service.hpp"
+#include <bitset>
+#include <regex>
 
 namespace xacc {
 namespace quantum {
@@ -169,19 +171,29 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
 
         int nBits = *std::max_element(nUniqueBits.begin(), nUniqueBits.end()) + 1;
 
-        auto hardwareGraph = std::make_shared<AcceleratorGraph>(nBits);
+       auto hardwareGraph = xacc::getService<Graph>("boost-ugraph");
+        for (int i = 0; i < nBits; i++) {
+            std::map<std::string,InstructionParameter> m{{"bias",1.0}};
+            hardwareGraph->addVertex(m);
+        }
         for (auto& edge : hardwareconnections) {
             hardwareGraph->addEdge(edge.first, edge.second);
         }
 
-  auto problemGraph = std::make_shared<DWGraph>(maxBitIdx + 1);
+//   auto problemGraph = std::make_shared<DWGraph>(maxBitIdx + 1);
+  auto problemGraph = xacc::getService<Graph>("boost-ugraph");
+        for (int i = 0; i < maxBitIdx+1;i++) {
+            std::map<std::string,InstructionParameter> m{{"bias",1.0}};
+            problemGraph->addVertex(m);
+        }
   for (auto inst : instructions) {
     if (inst->name() == "dw-qmi") {
       auto qbit1 = inst->bits()[0];
       auto qbit2 = inst->bits()[1];
       double weightOrBias = mpark::get<double>(inst->getParameter(0));
       if (qbit1 == qbit2) {
-        problemGraph->setVertexProperties(qbit1, weightOrBias);
+          auto p = inst->getParameter(0);
+        problemGraph->setVertexProperty(qbit1, "bias", p);
       } else {
         problemGraph->addEdge(qbit1, qbit2, weightOrBias);
       }

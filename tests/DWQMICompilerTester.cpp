@@ -108,8 +108,8 @@ public:
 
 class FakeEmbedding : public EmbeddingAlgorithm {
 public:
-  virtual Embedding embed(std::shared_ptr<DWGraph> problem,
-                          std::shared_ptr<xacc::AcceleratorGraph> hardware,
+  virtual Embedding embed(std::shared_ptr<xacc::Graph> problem,
+                          std::shared_ptr<xacc::Graph> hardware,
                           std::map<std::string, std::string> params =
                               std::map<std::string, std::string>()) override {
     Embedding embedding;
@@ -126,8 +126,8 @@ public:
 
 class Factoring15FakeEmbedding : public EmbeddingAlgorithm {
 public:
-  virtual Embedding embed(std::shared_ptr<DWGraph> problem,
-                          std::shared_ptr<xacc::AcceleratorGraph> hardware,
+  virtual Embedding embed(std::shared_ptr<xacc::Graph> problem,
+                          std::shared_ptr<xacc::Graph> hardware,
                           std::map<std::string, std::string> params =
                               std::map<std::string, std::string>()) override {
     Embedding embedding;

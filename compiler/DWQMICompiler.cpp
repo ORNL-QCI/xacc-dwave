@@ -54,7 +54,11 @@ std::shared_ptr<IR> DWQMICompiler::compile(const std::string &src,
 
         int nBits = *std::max_element(nUniqueBits.begin(), nUniqueBits.end()) + 1;
 
-        auto hardwareGraph = std::make_shared<AcceleratorGraph>(nBits);
+   auto hardwareGraph = xacc::getService<Graph>("boost-ugraph");
+        for (int i = 0; i < nBits; i++) {
+            std::map<std::string,InstructionParameter> m{{"bias",1.0}};
+            hardwareGraph->addVertex(m);
+        }
         for (auto& edge : hardwareconnections) {
             hardwareGraph->addEdge(edge.first, edge.second);
         }

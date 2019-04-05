@@ -2,7 +2,6 @@
 #include "XACC.hpp"
 #include "DWQMI.hpp"
 #include "DWFunction.hpp"
-#include <boost/multi_array.hpp>
 #include <Eigen/Dense>
 #include <typeinfo>
 

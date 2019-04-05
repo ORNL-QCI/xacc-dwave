@@ -29,14 +29,12 @@
  *
  **********************************************************************************/
 #include "DWQMIListener.hpp"
-#include "DWGraph.hpp"
 #include "DWIR.hpp"
 #include "DWFunction.hpp"
 #include "DWQMI.hpp"
 #include "Embedding.hpp"
 #include "EmbeddingAlgorithm.hpp"
 #include "exprtk.hpp"
-#include <boost/math/constants/constants.hpp>
 #include <iostream>
 
 #include "XACC.hpp"
@@ -48,7 +46,7 @@ namespace xacc {
 namespace quantum {
 DWQMIListener::DWQMIListener(
     std::shared_ptr<xacc::IR> ir,
-    std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph,
+    std::shared_ptr<xacc::Graph> hardwareGraph,
     std::shared_ptr<AcceleratorBuffer> aqcBuffer)
     : ir(ir), hardwareGraph(hardwareGraph), buffer(aqcBuffer) {}
 
@@ -74,14 +72,17 @@ void DWQMIListener::exitXacckernel(dwqmi::DWQMIParser::XacckernelContext *ctx) {
   maxBitIdx++;
 
   // Create a graph representation of the problem
-  auto problemGraph = std::make_shared<DWGraph>(maxBitIdx);
+//   auto problemGraph = std::make_shared<DWGraph>(maxBitIdx);
+ auto problemGraph = xacc::getService<Graph>("boost-ugraph");
+        for (int i = 0; i < maxBitIdx;i++) {
+            std::map<std::string,InstructionParameter> m{{"bias",1.0}};
+            problemGraph->addVertex(m);
+        }
   for (auto inst : curFunc->getInstructions()) {
     if (inst->name() == "dw-qmi") {
       auto qbit1 = inst->bits()[0];
       auto qbit2 = inst->bits()[1];
-      if (qbit1 == qbit2) {
-        problemGraph->setVertexProperties(qbit1, 1.0);
-      } else {
+      if (qbit1 != qbit2) {
         problemGraph->addEdge(qbit1, qbit2, 1.0);
       }
     }

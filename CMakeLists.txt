@@ -26,7 +26,7 @@ include_directories(${XACC_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/utils)
 
 link_directories(${XACC_LIBRARY_DIR})
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-attributes")
 add_subdirectory(compiler)
 add_subdirectory(accelerator)
 add_subdirectory(ir)

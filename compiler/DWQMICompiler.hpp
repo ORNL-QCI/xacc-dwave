@@ -30,7 +30,6 @@
  **********************************************************************************/
 #ifndef QUANTUM_AQC_COMPILERS_DWQMICOMPILER_HPP_
 #define QUANTUM_AQC_COMPILERS_DWQMICOMPILER_HPP_
-#include "DWGraph.hpp"
 #include "DWIR.hpp"
 #include "EmbeddingAlgorithm.hpp"
 #include "XACC.hpp"

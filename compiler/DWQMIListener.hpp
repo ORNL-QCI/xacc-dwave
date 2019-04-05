@@ -53,7 +53,7 @@ protected:
   bool foundAnneal = false;
   std::vector<std::string> functionVarNames;
   std::shared_ptr<IR> ir;
-  std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph;
+  std::shared_ptr<xacc::Graph> hardwareGraph;
   std::shared_ptr<AcceleratorBuffer> buffer;
   std::map<std::string, std::shared_ptr<DWFunction>> functions;
   std::shared_ptr<DWFunction> curFunc;
@@ -62,7 +62,7 @@ public:
   int maxBitIdx = 0;
 
   DWQMIListener(std::shared_ptr<xacc::IR> ir,
-                std::shared_ptr<xacc::AcceleratorGraph> hardwareGraph,
+                std::shared_ptr<xacc::Graph> hardwareGraph,
                 std::shared_ptr<AcceleratorBuffer> aqcBuffer);
 
   void enterInst(DWQMIParser::InstContext *ctx) override;
