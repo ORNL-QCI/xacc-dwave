@@ -56,7 +56,7 @@ settings = {'algo': "mnist_digit_train",
             'batch_size': 2,
             'rate': 0.1,
             'momentum': 0.5,
-            'train_step': 1,
+            'train_steps': 1,
             'max_classes': 1,
             'output': 'trained-rbm'}
 

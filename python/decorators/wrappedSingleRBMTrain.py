@@ -177,8 +177,6 @@ class WrappedSingleRBMTrain(xacc.DecoratorFunction):
             padded_array = np.zeros((padding, array.shape[1]))
             array = np.append(array, padded_array, axis=0)
         whole_batches = array.shape[0] // batch_size
-        print(batch_size)
-        print(whole_batches)
         final_array = np.zeros((whole_batches, batch_size, array.shape[1]))
         fidx = 0
         for i in range(final_array.shape[0]):
