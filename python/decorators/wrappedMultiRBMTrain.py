@@ -94,8 +94,8 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
         if 'test_data' in self.kwargs:
             self.test_data, self.test_targets = self.readTestData(self.kwargs['test_data'])
             self.test_data = self.batchData(self.test_data, self.batch_size)
-            evals = np.zeros((1797, 10))
-            truth_vals = np.zeros(1797)
+            evals = np.zeros((self.test_data.shape[0], self.num_classes))
+            truth_vals = np.zeros(self.test_data.shape[0])
 
             for digit in range(self.num_classes):
                 w = np.reshape(np.array(self.buffer.getInformation("{}_weights".format(digit))), (self.numV,self.numH))
