@@ -25,7 +25,7 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
         self.num_epochs = self.kwargs['num_epochs']
         self.momentum = self.kwargs['momentum']
         self.batch_size = self.kwargs['batch_size']
-        self.num_classes = self.kwargs['digit_classes']
+        self.num_classes = self.kwargs['max_classes']
 
         if 'chain-strength' in self.kwargs:
             xacc.setOption('chain-strength', self.kwargs['chain_strength'])
@@ -33,7 +33,7 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
             xacc.setOption('dwave-num-reads', self.kwargs['num_samples'])
 
         # Get parameterized DWK
-        self.rbm_function = self.compiledKernel.getIRFunction()
+        self.rbm_function = self.compiledKernel
 
         # Might be a better way to get these values, but this is what I'm shooting for right now
         self.numV = 0
@@ -46,10 +46,9 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
                 self.numH += 1
             if 'w' in inst:
                 self.numW += 1
-
+                
         # Initializing the weights from a random normal distribution
         # Initializing the hidden and visible biases to be zero
-          # From my understanding, thats what happens from the very beginning of the rbm_eager.py implementation
         self.weights = np.random.normal(0.01, 1.0, (self.numV, self.numH))
         self.visible_bias = np.zeros((1, self.numV))
         self.hidden_bias = np.zeros((1, self.numH))
@@ -129,19 +128,25 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
         return
 
     def readTrainData(self, csv_location, digit):
-        with open(csv_location) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=',')
-            imageL, labelL = [], []
-            for row in csv_reader:
-                imageL.append(row[:64])
-                labelL.append(row[64:65])
-            images = np.asarray(imageL).astype(dtype=np.uint8)/16.
-            images = (images > 0.705).astype(int)
-            labels = np.asarray(labelL).astype(dtype=np.uint8)
-            idx = np.where(labels==digit)[0]
-            images_idx = images[idx]
-            labels_idx = labels[idx]
-        return images_idx.astype('float32'), labels_idx.astype('float32')
+        if '.npy' in csv_location:
+            data = np.load(csv_location)
+            images = data[:, :self.numV-1]
+            labels = data[:, -1:]
+            return images.astype('float32'), labels.astype('float32')
+        else:
+            with open(csv_location) as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=',')
+                imageL, labelL = [], []
+                for row in csv_reader:
+                    imageL.append(row[:64])
+                    labelL.append(row[64:65])
+                images = np.asarray(imageL).astype(dtype=np.uint8)/16.
+                images = (images > 0.705).astype(int)
+                labels = np.asarray(labelL).astype(dtype=np.uint8)
+                idx = np.where(labels==digit)[0]
+                images_idx = images[idx]
+                labels_idx = labels[idx]
+            return images_idx.astype('float32'), labels_idx.astype('float32')
 
     def readTestData(self, csv_location):
         with open(csv_location) as csv_file:
@@ -156,15 +161,17 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
         return images.astype('float32'), labels.astype('float32')
 
     def batchData(self, array, batch_size):
-        whole_batches = array.shape[0] // batch_size
         part_batches = array.shape[0] % batch_size
-        final_array = np.zeros((whole_batches+part_batches, batch_size,array.shape[1]))
-        fidx = 0
+        padding = batch_size - part_batches
+        padded_array = np.zeros((padding, array.shape[1]))
+        array = np.append(array, padded_array, axis=0)
+        whole_batches = array.shape[0] // batch_size
+        final_array = np.zeros((whole_batches, batch_size,array.shape[1]))
         for i in range(final_array.shape[0]):
             final_array[i] = array[i*batch_size:batch_size+(batch_size*i)]
         print("Batched Array: ", final_array.shape)
         return final_array
-
+    
     def getDataExpectations(self, batch):
 
         hidden_probs = sigmoid(np.matmul(batch, self.weights) + self.hidden_bias)

@@ -57,7 +57,7 @@ settings = {'algo': "mnist_digit_train",
             'rate': 0.1,
             'momentum': 0.5,
             'train_step': 1,
-            'digit_classes': 1,
+            'max_classes': 1,
             'output': 'trained-rbm'}
 
 # Define the XACC kernel
