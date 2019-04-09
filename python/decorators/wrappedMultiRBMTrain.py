@@ -92,10 +92,11 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
         toc = time.clock()
         training_time = toc - tic
         if 'test_data' in self.kwargs:
-            self.test_data, self.test_targets = self.readTestData(self.kwargs['test_data'])
+            self.test_data, self.test_targets, n_tests = self.readTestData(self.kwargs['test_data'])
             self.test_data = self.batchData(self.test_data, self.batch_size)
-            evals = np.zeros((self.test_data.shape[0], self.num_classes))
-            truth_vals = np.zeros(self.test_data.shape[0])
+            print(self.test_data.shape)
+            evals = np.zeros((n_tests, self.num_classes))
+            truth_vals = np.zeros(n_tests)
 
             for digit in range(self.num_classes):
                 w = np.reshape(np.array(self.buffer.getInformation("{}_weights".format(digit))), (self.numV,self.numH))
@@ -155,10 +156,11 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
             for row in csv_reader:
                 imageL.append(row[:64])
                 labelL.append(row[64:65])
+            n = len(imageL)
             images = np.asarray(imageL).astype(dtype=np.uint8)/16.
             images = (images > 0.705).astype(int)
             labels = np.asarray(labelL).astype(dtype=np.uint8)
-        return images.astype('float32'), labels.astype('float32')
+        return images.astype('float32'), labels.astype('float32'), n
 
     def batchData(self, array, batch_size):
         part_batches = array.shape[0] % batch_size
