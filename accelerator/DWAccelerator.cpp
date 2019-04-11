@@ -202,12 +202,10 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
       annealingSchedule = std::make_shared<Anneal>(inst->getParameters());
     }
   }
-
   // Set the parameters with the problem graph, the hardware graph, and
   // embedding
   auto insts =
       parameterSetter->setParameters(problemGraph, hardwareGraph, embedding);
-
   auto newKernel = std::make_shared<DWFunction>(dwKernel->name());
   // Add the instructions to the Kernel
   for (auto i : insts) {
@@ -255,12 +253,12 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
   if (xacc::optionExists("dwave-num-reads")) {
     trials = xacc::getOption("dwave-num-reads");
   }
-
+    
   auto program = newKernel->toString("");
   program = std::regex_replace(program, std::regex(";"), "");
   jsonStr += "[{ \"solver\" : \"" + solverName + "\", \"type\" : \"" +
              solveType + "\", \"data\" : \"" + std::to_string(solver.nQubits) +
-             " " + std::to_string(nQMILines - 1) + "\\n" + program +
+             " " + std::to_string(nQMILines) + "\\n" + program +
              "\", \"params\": { \"num_reads\" : " + trials;
   if (solverName.find("c4-sw") == std::string::npos) {
     jsonStr += ", \"anneal_schedule\" : " + annealingStr;
@@ -268,7 +266,6 @@ DWAccelerator::processInput(std::shared_ptr<AcceleratorBuffer> buffer,
   jsonStr += ", \"auto_scale\" : true } }]";
 
   jsonStr = std::regex_replace(jsonStr, std::regex("\n"),"\\n");
-
   return jsonStr;
 }
 

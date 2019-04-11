@@ -6,12 +6,12 @@ import numpy as np
 import time
 from scipy.special import expit as sigmoid
 from collections import Counter
-@ComponentFactory("wrapped_rbm_train_mnist_factory")
+@ComponentFactory("wrapped_single_rbm_train_factory")
 @Provides("decorator_algorithm_service")
-@Property("_algorithm", "algorithm", "mnist_digit_train")
-@Property("_name", "name", "mnist_digit_train")
-@Instantiate("wrapped_rbm_train_mnist_instance")
-class WrappedRBMTrain(xacc.DecoratorFunction):
+@Property("_algorithm", "algorithm", "single_rbm_train")
+@Property("_name", "name", "single_rbm_train")
+@Instantiate("wrapped_single_rbm_train_instance")
+class WrappedSingleRBMTrain(xacc.DecoratorFunction):
 
     def __call__(self, *args, **kwargs):
         super().__call__(*args, **kwargs)
@@ -25,15 +25,16 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
         self.num_epochs = self.kwargs['num_epochs']
         self.momentum = self.kwargs['momentum']
         self.batch_size = self.kwargs['batch_size']
-        self.num_classes = self.kwargs['digit_classes']
-
+        self.num_classes = self.kwargs['max_classes']
+        self.train_steps = self.kwargs['train_steps']
+        
         if 'chain-strength' in self.kwargs:
             xacc.setOption('chain-strength', self.kwargs['chain_strength'])
         if 'num_samples' in self.kwargs:
             xacc.setOption('dwave-num-reads', self.kwargs['num_samples'])
 
         # Get parameterized DWK
-        self.rbm_function = self.compiledKernel.getIRFunction()
+        self.rbm_function = self.compiledKernel
 
         # Might be a better way to get these values, but this is what I'm shooting for right now
         self.numV = 0
@@ -46,64 +47,63 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
                 self.numH += 1
             if 'w' in inst:
                 self.numW += 1
-
+                
         # Initializing the weights from a random normal distribution
         # Initializing the hidden and visible biases to be zero
-          # From my understanding, thats what happens from the very beginning of the rbm_eager.py implementation
         self.weights = np.random.normal(0.01, 1.0, (self.numV, self.numH))
         self.visible_bias = np.zeros((1, self.numV))
         self.hidden_bias = np.zeros((1, self.numH))
         tic = time.clock()
 
-        for digit in range(self.num_classes):
+        self.data, self.n_evts = self.readTrainData(self.kwargs['train_data'])
+        self.data = self.batchData(self.data, self.batch_size)
+            
+        for epoch in range(self.num_epochs):
+        
+            train_step = 0
+            for batch in self.data:
+                xacc.info("Train Step {}".format(train_step))
+                if train_step >= self.train_steps > -1:
+                    break
+                    
+                # get data expectation values
+                dataExpW, dataExpV, dataExpH = self.getDataExpectations(batch)
 
-            print("Begin training for digit {}.".format(digit))
-            self.data, self.targets = self.readTrainData(self.kwargs['train_data'], digit)
-            self.data = self.batchData(self.data, self.batch_size)
+                # set the RBM
+                self.setRBM()
 
-            for epoch in range(self.num_epochs):
-                train_step = 0
-                for batch in self.data:
-                    if train_step > self.kwargs['train_step']:
-                        break
-                    # get data expectation values
-                    dataExpW, dataExpV, dataExpH = self.getDataExpectations(batch)
+                training_buffer = self.qpu.createBuffer("buffer")
+                training_buffer.addExtraInfo('embedding', self.embedding)
 
-                    # set the RBM
-                    self.setRBM()
+                # Execute the RBM with the new parameters
+                self.executeRBM(training_buffer)
 
-                    training_buffer = self.qpu.createBuffer("buffer")
-                    training_buffer.addExtraInfo('embedding', self.embedding)
+                # Get the expectation values from the D-Wave execution
+                modelExpW, modelExpV, modelExpH = self.getExpectations()
 
-                    # Execute the RBM with the new parameters
-                    self.executeRBM(training_buffer)
+                # Update the parameters for this batch
+                self.updateParameters(dataExpW, modelExpW, dataExpV, modelExpV, dataExpH, modelExpH)
 
-                    # Get the expectation values from the D-Wave execution
-                    modelExpW, modelExpV, modelExpH = self.getExpectations()
+                train_step += 1
 
-                    # Update the parameters for this batch
-                    self.updateParameters(dataExpW, modelExpW, dataExpV, modelExpV, dataExpH, modelExpH)
-
-                    train_step += 1
-
-            self.buffer.addExtraInfo("{}_visible".format(digit), self.visible_bias.flatten().tolist())
-            self.buffer.addExtraInfo("{}_hidden".format(digit), self.hidden_bias.flatten().tolist())
-            self.buffer.addExtraInfo("{}_weights".format(digit), self.weights.flatten().tolist())
+        self.buffer.addExtraInfo("rbm_visible", self.visible_bias.flatten().tolist())
+        self.buffer.addExtraInfo("rbm_hidden", self.hidden_bias.flatten().tolist())
+        self.buffer.addExtraInfo("rbm_weights", self.weights.flatten().tolist())
 
         toc = time.clock()
         training_time = toc - tic
         if 'test_data' in self.kwargs:
-            self.test_data, self.test_targets = self.readTestData(self.kwargs['test_data'])
+            self.test_data, self.test_targets, n_tests = self.readTestData(self.kwargs['test_data'])
             self.test_data = self.batchData(self.test_data, self.batch_size)
-            evals = np.zeros((1797, 10))
-            truth_vals = np.zeros(1797)
+            evals = np.zeros((n_tests, self.num_classes))
+            truth_vals = np.zeros(n_tests)
 
             for digit in range(self.num_classes):
-                w = np.reshape(np.array(self.buffer.getInformation("{}_weights".format(digit))), (self.numV,self.numH))
-                v = np.reshape(np.array(self.buffer.getInformation("{}_visible".format(digit))), (1, self.numV))
-                h = np.reshape(np.array(self.buffer.getInformation("{}_hidden".format(digit))), (1,self.numH))
+                w = np.reshape(np.array(self.buffer.getInformation("rbm_weights")), (self.numV, self.numH))
+                v = np.reshape(np.array(self.buffer.getInformation("rbm_visible")), (1, self.numV))
+                h = np.reshape(np.array(self.buffer.getInformation("rbm_hidden")), (1,self.numH))
                 count = 0
-                for i,batch in enumerate(self.test_data):
+                for i, batch in enumerate(self.test_data):
                     Fv = self.freeEnergy(batch, w, v, h)
                     targets = np.reshape(self.test_targets[i], (-1,))
                     ll = list(zip(targets, Fv))
@@ -122,49 +122,68 @@ class WrappedRBMTrain(xacc.DecoratorFunction):
         print("Finished Training")
         print("Accuracy: ", self.buffer.getInformation('accuracy'))
         print("Training Time: ", self.buffer.getInformation('training-time'))
-        output_name = self.kwargs['output']+'.ab' if 'output' in self.kwargs else "rbm-buffer-{}.ab".format(timestr)
+        output_name = self.kwargs['output']+'.ab' if 'output' in self.kwargs else "trained-rbm-buffer-{}.ab".format(timestr)
         f = open(output_name, "w")
         f.write(str(self.buffer))
         f.close()
         return
 
-    def readTrainData(self, csv_location, digit):
-        with open(csv_location) as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=',')
-            imageL, labelL = [], []
-            for row in csv_reader:
-                imageL.append(row[:64])
-                labelL.append(row[64:65])
-            images = np.asarray(imageL).astype(dtype=np.uint8)/16.
-            images = (images > 0.705).astype(int)
-            labels = np.asarray(labelL).astype(dtype=np.uint8)
-            idx = np.where(labels==digit)[0]
-            images_idx = images[idx]
-            labels_idx = labels[idx]
-        return images_idx.astype('float32'), labels_idx.astype('float32')
+    def readTrainData(self, csv_location):
+        if '.npy' in csv_location:
+            data = np.load(csv_location)
+            images = data[:, :self.numV-1]
+            n = len(images)
+            labels = data[:, -1:]
+            all_data = np.concatenate((images, labels), axis=1)
+            return all_data.astype('float32'), n
+        else:
+            with open(csv_location) as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=',')
+                imageL, labelL = [], []
+                for row in csv_reader:
+                    imageL.append(row[:self.numV])
+                    labelL.append(row[self.numV:self.numV+1])
+                images = np.asarray(imageL).astype(dtype=np.uint8)/16.
+                images = (images > 0.705).astype(int)
+                labels = np.asarray(labelL).astype(dtype=np.uint8)
+                n = len(images)
+                all_data = np.concatenate((images, labels), axis=1)
+            return all_data.astype('float32'), n
 
     def readTestData(self, csv_location):
+        if '.npy' in csv_location:
+            data = np.load(csv_location)
+            images = data[:, :self.numV-1]
+            n = len(images)
+            labels = data[:, -1:]
+            all_data = np.concatenate((images, labels), axis=1)
+            return all_data.astype('float32'), labels.astype('float32'), n
         with open(csv_location) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             imageL, labelL = [], []
             for row in csv_reader:
                 imageL.append(row[:64])
                 labelL.append(row[64:65])
+            n = len(imageL)
             images = np.asarray(imageL).astype(dtype=np.uint8)/16.
             images = (images > 0.705).astype(int)
             labels = np.asarray(labelL).astype(dtype=np.uint8)
         return images.astype('float32'), labels.astype('float32')
 
     def batchData(self, array, batch_size):
-        whole_batches = array.shape[0] // batch_size
         part_batches = array.shape[0] % batch_size
-        final_array = np.zeros((whole_batches+part_batches, batch_size,array.shape[1]))
+        if part_batches > 0:
+            padding = batch_size - part_batches
+            padded_array = np.zeros((padding, array.shape[1]))
+            array = np.append(array, padded_array, axis=0)
+        whole_batches = array.shape[0] // batch_size
+        final_array = np.zeros((whole_batches, batch_size, array.shape[1]))
         fidx = 0
         for i in range(final_array.shape[0]):
             final_array[i] = array[i*batch_size:batch_size+(batch_size*i)]
-        print("Batched Array: ", final_array.shape)
+        xacc.info("Batched Array: " + str(final_array.shape))
         return final_array
-
+    
     def getDataExpectations(self, batch):
 
         hidden_probs = sigmoid(np.matmul(batch, self.weights) + self.hidden_bias)

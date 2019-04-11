@@ -26,8 +26,8 @@ import h5py, os, csv, ast
 # requests.get('https://httpbin.org/headers')
 
 # File names to pass in for training and testing data
-train_file = os.path.join('nist_data/optdigits.tra')
-test_file = os.path.join('nist_data/optdigits.tes')
+train_file = os.path.join('stargalaxy_data/sg_train_64bits.npy')
+test_file = os.path.join('stargalaxy_data/sg_test_64bits.npy')
 # Initialize the xacc framework
 xacc.Initialize()
 # Get the XACC D-Wave accelerator
@@ -46,18 +46,18 @@ buffer.addExtraInfo('embedding', embedding)
 # These can also be passed directly into the xacc.qpu() decorator as keyword arguments
 # an optional argument for naming the output buffer file
 # is 'output': 'name_of_file' (no file extension)
-settings = {'algo': "mnist_digit_train",
+settings = {'algo': "single_rbm_train",
             'accelerator': dwave,
             'train_data': train_file,
             'test_data': test_file,
-            'num_samples': 100,
+            'num_samples': 50,
             'chain_strength': 4700,
             'num_epochs': 1,
             'batch_size': 2,
             'rate': 0.1,
             'momentum': 0.5,
-            'train_step': 1,
-            'digit_classes': 1,
+            'train_steps': 1,
+            'max_classes': 2,
             'output': 'trained-rbm'}
 
 # Define the XACC kernel
@@ -66,10 +66,9 @@ settings = {'algo': "mnist_digit_train",
 # The XACC Python decorator arguments define how the training algorithm will be executed
 @xacc.qpu(**settings)
 def rbm_train(buffer):
-    rbm(visible_units=64,hidden_units=10)
+    rbm(visible_units=33,hidden_units=10)
 
 # Execute the XACC kernel, passing the AcceleratorBuffer as an argument
 rbm_train(buffer)
-
 # Finalize the XACC framework
 xacc.Finalize()
